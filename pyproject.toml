@@ -1,0 +1,27 @@
+[project]
+name = "qdrant-init"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Adhithya Bhaskar", email = "adhithyabhaskar@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ipykernel>=7.1.0",
+    "kreuzberg>=3.21.0",
+    "notebook>=7.4.7",
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "qdrant-client>=1.15.1",
+    "semantic-text-splitter>=0.28.0",
+    "sentence-transformers>=5.1.2",
+    "tqdm>=4.67.1",
+]
+
+[project.scripts]
+qdrant-init = "qdrant_init:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
