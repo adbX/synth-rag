@@ -73,9 +73,9 @@ Each JSON log contains:
 
 ### To-dos
 
-- [ ] Set up imports and CLI argument parsing with argparse
-- [ ] Implement functions to read CSV and discover/combine .qmd files per paper
-- [ ] Implement async function to query a single paper with paperqa
-- [ ] Implement async function to query all papers with progress tracking
-- [ ] Implement JSON logging system with organized subfolder structure
-- [ ] Create main async function to orchestrate single vs batch mode
+- [x] Set up imports and CLI argument parsing with argparse
+- [x] Implement functions to read CSV and discover/combine .qmd files per paper
+- [x] Implement async function to query a single paper with paperqa
+- [x] Implement async function to query all papers with progress tracking
+- [x] Implement JSON logging system with organized subfolder structure
+- [x] Create main async function to orchestrate single vs batch mode
