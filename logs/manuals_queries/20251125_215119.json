@@ -1,0 +1,56 @@
+{
+  "question": "In the FM Drum Machine of Digitone II, what are all the ways to increase the decay time?",
+  "collection": "midi_manuals",
+  "top_k": 5,
+  "prefetch_limit": 50,
+  "manual_filter": null,
+  "query_time_seconds": 0.482574,
+  "results": [
+    {
+      "rank": 1,
+      "score": 20.522295,
+      "manual_name": "Digitone II Appendix & MIDI CC",
+      "page_num": 19,
+      "text_snippet": "APPENDIX B: THE FM TONE SYNTHESIS\n108\nC which always works like a carrier, is limited mostly to integers since it is generally used for carrying the \nbase note of the sound. For more information, please see “A.2.1 FM TONE” on page 89.\nA has a more extensive number of ratio values to allow for more inharmonic relationships. For more informa-\ntion, please see “A.2.1 FM TONE” on page 89.\nB (B1 and B2) controls both operators at the same time. The minimum value for B1 and B2 is .25. As you \nturn the",
+      "image_path": "/Users/adb/stuff/gitclones/qdrant-init/documents/midi_synthesizers/tmp/pages/Digitone II Appendix & MIDI CC/page_0019.png",
+      "point_id": 19
+    },
+    {
+      "rank": 2,
+      "score": 20.473816,
+      "manual_name": "Digitone II Appendix & MIDI CC",
+      "page_num": 4,
+      "text_snippet": "APPENDIX A: MACHINES\n93\nBDEL\nSame as ADEL but for operator group B (B1 and B2).\nBTRG\nSame as ATRG but for operator group B (B1 and B2).\nBRST\nSame as ARST but for operator group B (B1 and B2).\nPAGE 4\nThe parameters on the page 4 controls the operators ratio o!sets and the key scaling. \nRATIO OFFSET C, A, B1, B2\nAdds o!sets to the ratios of each of the four operators.\nKEY TRACK A\nKey track sets the level of how much the modulation output from operator A is a!ected by what \nnote you play on the key",
+      "image_path": "/Users/adb/stuff/gitclones/qdrant-init/documents/midi_synthesizers/tmp/pages/Digitone II Appendix & MIDI CC/page_0004.png",
+      "point_id": 4
+    },
+    {
+      "rank": 3,
+      "score": 19.026396,
+      "manual_name": "Digitone II Appendix & MIDI CC",
+      "page_num": 14,
+      "text_snippet": "APPENDIX A: MACHINES\n103\nATK\nAttack Time sets the length of the attack phase of the ﬁlter envelope.\nDEC\nDecay Time sets the length of the decay phase of the ﬁlter envelope.\nSUS\nSustain Level sets the sustain level of the ﬁlter envelope.\nREL\nRelease Time sets the length of the release phase of the ﬁlter envelope.\nFREQ\nFrequency sets the cuto! frequency of the ﬁlter.\nRESO\nResonance sets the resonance behavior of the ﬁlter. Resonance introduces a peak in the spectrum at \nthe cuto! frequency. \nENV\nE",
+      "image_path": "/Users/adb/stuff/gitclones/qdrant-init/documents/midi_synthesizers/tmp/pages/Digitone II Appendix & MIDI CC/page_0014.png",
+      "point_id": 14
+    },
+    {
+      "rank": 4,
+      "score": 18.700674,
+      "manual_name": "Digitone II Appendix & MIDI CC",
+      "page_num": 21,
+      "text_snippet": "APPENDIX B: THE FM TONE SYNTHESIS\n110\nSaw\n(All partials)\nSaw reduction\nOdd/Even Mix\nSquare\n(Odd partials)\nSquare \nreduction\nBell\nThe Digitone II uses a form of additive synthesis to create the harmonic series for the HARM parameter. \nAdditive synthesis is one of the oldest forms of electronic sound generation. It is a quite simple form of \nsynthesis but still very powerful. The basic principle is to add multiple sine waves together to form complex \ntimbres. Each sine wave is called a partial. By",
+      "image_path": "/Users/adb/stuff/gitclones/qdrant-init/documents/midi_synthesizers/tmp/pages/Digitone II Appendix & MIDI CC/page_0021.png",
+      "point_id": 21
+    },
+    {
+      "rank": 5,
+      "score": 18.51853,
+      "manual_name": "Digitone II Appendix & MIDI CC",
+      "page_num": 6,
+      "text_snippet": "APPENDIX A: MACHINES\n95\nEND\nEnd B sets the end level of the modulation envelope for operator B.\nMOD\nMod B sets the modulation amount from operator B.\nPAGE 3\nHOLD \nBody Hold sets the time before the decay phase starts for the body part of the sound.\nDEC \nBody Decay sets the length of the decay phase for the body part of the sound. The last value is \ninﬁnite.\nPH.C \nOP C Phase sets the reset of the phase for operator C. A parameter value less than 90 means that \nphase reset is on, and the value rep",
+      "image_path": "/Users/adb/stuff/gitclones/qdrant-init/documents/midi_synthesizers/tmp/pages/Digitone II Appendix & MIDI CC/page_0006.png",
+      "point_id": 6
+    }
+  ],
+  "timestamp": "2025-11-25T21:51:19.945782"
+}

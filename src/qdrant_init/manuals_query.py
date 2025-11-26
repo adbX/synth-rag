@@ -102,7 +102,7 @@ def query_manuals(
     processed_query = colpali_processor.process_queries([question]).to(device)
     with torch.no_grad():
         query_embedding = colpali_model(**processed_query)[0]
-    query_embedding_list = query_embedding.cpu().numpy().tolist()
+    query_embedding_list = query_embedding.cpu().float().numpy().tolist()
     
     # Build filter if manual_filter is provided
     query_filter = None
@@ -154,7 +154,6 @@ def query_manuals(
         using="colpali_original",  # Final rerank with original ColPali vectors
         query_filter=query_filter,
         with_payload=True,
-        with_vector=False,
     )
     
     query_time = (datetime.now() - start_time).total_seconds()

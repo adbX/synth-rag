@@ -300,9 +300,9 @@ def ingest_manuals(
                 page_idx = i + j
                 all_page_embeddings.append({
                     "page_num": page_idx,
-                    "original": orig.cpu().numpy().tolist(),
-                    "rows": row.cpu().numpy().tolist(),
-                    "cols": col.cpu().numpy().tolist(),
+                    "original": orig.cpu().float().numpy().tolist(),
+                    "rows": row.cpu().float().numpy().tolist(),
+                    "cols": col.cpu().float().numpy().tolist(),
                     "text": page_texts[page_idx],
                     "image_path": str(batch_paths[j]),
                 })
@@ -348,9 +348,13 @@ def ingest_manuals(
             points.append(point)
             point_id += 1
         
-        # Upsert batch
-        print(f"  Upserting {len(points)} points...")
-        client.upsert(collection_name=collection_name, points=points)
+        # Upsert in smaller batches to avoid payload size limits
+        print(f"  Upserting {len(points)} points in batches...")
+        upsert_batch_size = 10  # Keep payload size manageable
+        for i in range(0, len(points), upsert_batch_size):
+            batch = points[i:i + upsert_batch_size]
+            client.upsert(collection_name=collection_name, points=batch)
+            print(f"    Upserted {min(i + upsert_batch_size, len(points))}/{len(points)} points")
     
     print(f"\n✅ Ingestion complete! Total points: {point_id}")
     

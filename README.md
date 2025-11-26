@@ -94,7 +94,7 @@ Query the indexed manuals using hybrid search:
 
 ```bash
 uv run python -m qdrant_init.manuals_query \
-    --question "How do I set up MIDI sync?" \
+    --question "In the FM Drum Machine of Digitone II, what are all the ways to increase the decay time?" \
     --collection midi_manuals \
     --top-k 5 \
     --device mps

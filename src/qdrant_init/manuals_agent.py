@@ -103,7 +103,7 @@ class ManualsRetriever:
         processed_query = self._colpali_processor.process_queries([query]).to(self.device)
         with torch.no_grad():
             query_embedding = self._colpali_model(**processed_query)[0]
-        query_embedding_list = query_embedding.cpu().numpy().tolist()
+        query_embedding_list = query_embedding.cpu().float().numpy().tolist()
         
         # Hybrid search with reranking
         response = self.client.query_points(
@@ -134,7 +134,6 @@ class ManualsRetriever:
             limit=self.top_k,
             using="colpali_original",
             with_payload=True,
-            with_vector=False,
         )
         
         # Format results
