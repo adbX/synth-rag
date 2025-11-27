@@ -1,0 +1,4 @@
+site_name: Agentic RAG for Synthesizer manuals
+site_url: https://github.com/adbX/synth-rag
+theme:
+  name: material

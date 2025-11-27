@@ -240,3 +240,11 @@ For detailed setup, you would typically refer to the Digitone II's MIDI implemen
 
 If you have access to the manuals, they would provide the most accurate and detailed instructions for both devices.
 ```
+
+# rename
+
+I have changed the name of my project to `synth-rag`. Give me a list of all the files/modules/commands/etc. that I need to rename to match the new name.
+
+# mkdocs
+
+I have mkdocs with uv `uv run mkdocs serve`. Create a comprehensive set of documentation using my project readme `README.md` and the scripts in the `src/qdrant_init/` folder.
