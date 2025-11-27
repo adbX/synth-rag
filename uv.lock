@@ -3664,6 +3664,12 @@ dependencies = [
     { name = "tqdm" },
 ]
 
+[package.dev-dependencies]
+docs = [
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings-python" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "brave-search", specifier = ">=0.1.8" },
@@ -3687,6 +3693,12 @@ requires-dist = [
     { name = "semantic-text-splitter", specifier = ">=0.28.0" },
     { name = "sentence-transformers", specifier = ">=5.1.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
+]
+
+[package.metadata.requires-dev]
+docs = [
+    { name = "mkdocs-material", specifier = ">=9.7.0" },
+    { name = "mkdocstrings-python", specifier = ">=2.0.0" },
 ]
 
 [[package]]

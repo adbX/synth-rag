@@ -37,3 +37,9 @@ synth-rag = "synth_rag:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+docs = [
+    "mkdocs-material>=9.7.0",
+    "mkdocstrings-python>=2.0.0",
+]

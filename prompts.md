@@ -444,4 +444,6 @@ All diagrams use appropriate mermaid diagram types:
 
 The documentation now has a more professional, visual appearance while maintaining all the technical accuracy. The build completes successfully! 🎉
 
-#
+# ci mkdocs uv
+
+I am using uv for package management and to use my repo as a package itself that mkdocstrings can use to document the code. I have a ci workflow that builds the docs and deploys them to the gh-pages branch. I want to use uv to build the docs and deploy them to the gh-pages branch. I am currently installing all the packages using uv sync in the ci workflow which is unnecessary if I am only building the docs. Can I use dependency groups to only install the packages needed for the docs? (https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-groups). Update the ci file and and list the uv commands I need to run for the groups (but don't run the latter) @.github/workflows/ci.yml @pyproject.toml 
