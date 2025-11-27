@@ -373,4 +373,4 @@ I have changed the name of my project to `synth-rag`. Give me a list of all the 
 
 # mkdocs
 
-I have mkdocs with uv `uv run mkdocs serve`. Create a comprehensive set of documentation using my project readme `README.md` and the scripts in the `src/synth_rag/` folder.
+I have mkdocs running with uv (`uv run mkdocs serve`). Create a comprehensive set of documentation using my project readme `README.md` and the scripts in the `src/synth_rag/` folder. Update the mkdocs.yml file to reflect the new name and structure. I also have mkdocstrings plugin (https://mkdocstrings.github.io/python/usage/) for python docstrings. Use it to document the code in the `src/synth_rag/` folder.
