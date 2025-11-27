@@ -8,8 +8,8 @@ theme:
   name: material
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
+      primary: teal
+      accent: light-blue
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -20,23 +20,28 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.path
     - navigation.top
+    - navigation.tracking
     - search.suggest
     - search.highlight
     - content.code.copy
+    - toc.follow
+    # - toc.integrate 
+
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Quickstart: quickstart.md
-    - Setup: setup.md
-  - User Guide:
-    - Usage: usage.md
-    - Architecture: architecture.md
-    - Troubleshooting: troubleshooting.md
+  - Quickstart: quickstart.md
+  - Setup: setup.md
+  - Usage: usage.md
+  - Architecture: architecture.md
   - API Reference:
     - Settings: api/settings.md
     - Ingestion: api/manuals_ingest.md

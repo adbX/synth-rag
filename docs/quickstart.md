@@ -1,8 +1,9 @@
-# Quickstart
-
-Get up and running with Synth-RAG in under 5 minutes.
-
 ---
+hide:
+  - navigation
+---
+
+# Quickstart
 
 ## Prerequisites
 
@@ -14,18 +15,16 @@ Get up and running with Synth-RAG in under 5 minutes.
 
 ## Installation
 
-1. **Clone the repository**:
+**1. Clone and install:**
+
 ```bash
 git clone https://github.com/adbX/synth-rag.git
 cd synth-rag
-```
-
-2. **Install dependencies**:
-```bash
 uv sync
 ```
 
-3. **Create `.env` file**:
+**2. Create `.env` file:**
+
 ```bash
 cat <<'EOF' > .env
 QDRANT_URL="https://<your-qdrant-cluster>"
@@ -35,20 +34,11 @@ BRAVE_API_KEY="<your-brave-key>"
 EOF
 ```
 
----
-
-## Verify Installation
-
-Run these commands to verify core dependencies:
+**3. Verify installation:**
 
 ```bash
-# Check PyTorch
 uv run python -c "import torch; print('Torch:', torch.__version__)"
-
-# Check ColPali
 uv run python -c "from colpali_engine.models import ColPali; print('ColPali ready')"
-
-# Check Qdrant client
 uv run python -c "from qdrant_client import QdrantClient; print('Qdrant client ok')"
 ```
 
@@ -72,8 +62,6 @@ flowchart LR
 
 ### Step 1: Ingest Test Manuals
 
-Start with the test subset (3 PDFs):
-
 ```bash
 uv run python -m synth_rag.manuals_ingest \
     --subset test \
@@ -84,23 +72,11 @@ uv run python -m synth_rag.manuals_ingest \
 ```
 
 !!! tip "Device Selection"
-    - Use `--device mps` for Apple Silicon (M1/M2/M3)
-    - Use `--device cuda:0` for NVIDIA GPUs
-    - Use `--device cpu` as fallback
-
-This will:
-
-1. Render PDF pages to images
-2. Extract text per page
-3. Generate ColPali multivectors
-4. Create dense/sparse embeddings
-5. Upload to Qdrant
-
----
+    - `--device mps` for Apple Silicon (M1/M2/M3)
+    - `--device cuda:0` for NVIDIA GPUs
+    - `--device cpu` as fallback
 
 ### Step 2: Query the Manuals
-
-Ask a question using hybrid search:
 
 ```bash
 uv run python -m synth_rag.manuals_query \
@@ -110,13 +86,7 @@ uv run python -m synth_rag.manuals_query \
     --device mps
 ```
 
-**Output**: Pretty-printed results with scores, manual names, page numbers, and text snippets.
-
----
-
 ### Step 3: Use the Agent
-
-For more complex queries with web search fallback:
 
 ```bash
 uv run python -m synth_rag.manuals_agent \
@@ -126,41 +96,10 @@ uv run python -m synth_rag.manuals_agent \
     --device mps
 ```
 
-The agent will:
-
-1. Query your local manuals first
-2. Search the web if needed
-3. Generate a cited, grounded answer
-
 ---
 
 ## Next Steps
 
-- [Full Setup Guide](setup.md) - Configure for production use
-- [Usage Examples](usage.md) - Explore all features
-- [Architecture](architecture.md) - Understand how it works
-
----
-
-## Quick Troubleshooting
-
-### Out of Memory?
-```bash
-# Reduce batch size
-uv run python -m synth_rag.manuals_ingest --batch-size 2
-```
-
-### Collection Already Exists?
-```bash
-# Recreate from scratch
-uv run python -m synth_rag.manuals_ingest --recreate-collection
-```
-
-### Slow Queries?
-```bash
-# Adjust prefetch limit
-uv run python -m synth_rag.manuals_query --prefetch-limit 100 --top-k 3
-```
-
-See [Troubleshooting](troubleshooting.md) for more help.
-
+- [Setup Guide](setup.md) - Detailed configuration
+- [Usage Guide](usage.md) - Explore all features
+- [Architecture](architecture.md) - Understand the system

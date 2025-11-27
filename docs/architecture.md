@@ -1,8 +1,9 @@
-# Architecture
-
-Deep dive into Synth-RAG's system design and components.
-
 ---
+hide:
+  - navigation
+---
+
+# Architecture
 
 ## System Overview
 
@@ -86,12 +87,6 @@ Extracts plain text per page for:
 2. Payload metadata in search results
 3. Human-readable snippets
 
-```python
-def extract_text_per_page(pdf_path: Path) -> list[str]:
-    doc = pymupdf.open(pdf_path)
-    return [page.get_text() for page in doc]
-```
-
 ---
 
 ### 2. Embedding Generation
@@ -145,10 +140,7 @@ dense_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
 dense_vectors = list(dense_model.embed(text_chunks))
 ```
 
-**Chunking strategy**:
-
-- Semantic text splitter with 512-token chunks
-- 50-token overlap for context continuity
+**Chunking strategy**: Semantic text splitter with 512-token chunks, 50-token overlap.
 
 #### Sparse Embeddings (BM25)
 
@@ -184,20 +176,6 @@ Each page is stored as a point with multiple named vectors:
 }
 ```
 
-#### HNSW Configuration
-
-```python
-models.VectorParams(
-    size=128,  # or 384 for dense
-    distance=models.Distance.COSINE,
-    on_disk=False,
-    hnsw_config=models.HnswConfigDiff(
-        m=16,  # Number of edges per node
-        ef_construct=100,  # Construction quality
-    ),
-)
-```
-
 ---
 
 ### 4. Hybrid Search & Reranking
@@ -212,30 +190,10 @@ Uses HNSW-indexed vectors to retrieve top-N candidates:
 client.query_points(
     collection_name="midi_manuals",
     prefetch=[
-        # Dense semantic search
-        models.Prefetch(
-            query=dense_vector,
-            using="dense",
-            limit=50,
-        ),
-        # Sparse keyword search
-        models.Prefetch(
-            query=sparse_vector,
-            using="sparse",
-            limit=50,
-        ),
-        # ColPali row-pooled search
-        models.Prefetch(
-            query=colpali_rows,
-            using="colpali_rows",
-            limit=50,
-        ),
-        # ColPali col-pooled search
-        models.Prefetch(
-            query=colpali_cols,
-            using="colpali_cols",
-            limit=50,
-        ),
+        models.Prefetch(query=dense_vector, using="dense", limit=50),
+        models.Prefetch(query=sparse_vector, using="sparse", limit=50),
+        models.Prefetch(query=colpali_rows, using="colpali_rows", limit=50),
+        models.Prefetch(query=colpali_cols, using="colpali_cols", limit=50),
     ],
     # ... rerank configuration
 )
@@ -260,8 +218,6 @@ For each query vector \(q_i\), find the maximum similarity with document vectors
 \[
 \text{MaxSim}(Q, D) = \sum_{i=1}^{|Q|} \max_{j=1}^{|D|} \text{sim}(q_i, d_j)
 \]
-
-This captures fine-grained visual-semantic matches.
 
 ---
 
@@ -312,7 +268,6 @@ workflow.add_edge("tools", "agent")
 @tool
 def manuals_retriever_tool(query: str) -> str:
     """Retrieve information from MIDI synthesizer manuals."""
-    # Runs hybrid search + reranking
     results = search_manuals(query)
     return format_results_with_citations(results)
 ```
@@ -338,123 +293,6 @@ The system prompt ensures:
 
 ---
 
-## Performance Characteristics
-
-### Indexing Performance
-
-```mermaid
-gantt
-    title Indexing Performance per Page (870ms total)
-    dateFormat X
-    axisFormat %L ms
-    
-    section Pipeline
-    PDF Render (CPU)       :200, 0, 200
-    Text Extract (CPU)     :50, 200, 250
-    ColPali Embed (GPU)    :crit, 500, 250, 750
-    FastEmbed (CPU)        :20, 750, 770
-    Upload (Network)       :100, 770, 870
-```
-
-**Bottleneck Analysis:**
-
-| Stage | Time (per page) | Bottleneck |
-|-------|----------------|------------|
-| PDF Render | ~200ms | CPU (image decode) |
-| Text Extract | ~50ms | CPU (text parse) |
-| ColPali Embed | ~500ms | **GPU/NPU** ⚠️ |
-| FastEmbed | ~20ms | CPU |
-| Upload | ~100ms | Network |
-| **Total** | **~870ms** | ColPali |
-
-**Optimizations**:
-
-- Batch processing (4 pages at once)
-- Parallel rendering & text extraction
-- Mean-pooling to avoid indexing 1030-dim vectors
-
-### Query Performance
-
-```mermaid
-gantt
-    title Query Performance (250ms total)
-    dateFormat X
-    axisFormat %L ms
-    
-    section Two-Stage
-    Prefetch 50 results (HNSW)  :50, 0, 50
-    Rerank top 5 (MaxSim)       :200, 50, 250
-    
-    section Single-Stage
-    Score all 10k pages         :crit, 10000, 0, 10000
-```
-
-**Performance Comparison:**
-
-| Stage | Time | Optimization |
-|-------|------|--------------|
-| Prefetch (50 results) | ~50ms | HNSW index |
-| Rerank (top 5) | ~200ms | Only rerank finalists |
-| **Total** | **~250ms** | Two-stage design |
-
-**Without two-stage**: Would need to score all 10,000+ pages with MaxSim (~5-10 seconds).
-
----
-
-## Scalability
-
-### Collection Size
-
-```mermaid
-graph TD
-    subgraph Scale[Scalability Characteristics]
-        direction TB
-        S100["100 pages<br/>~500 MB<br/>~200ms query"]
-        S1K["1,000 pages<br/>~5 GB<br/>~250ms query"]
-        S10K["10,000 pages<br/>~50 GB<br/>~300ms query"]
-        S20K["20,000 pages<br/>~100 GB<br/>~350ms query"]
-        
-        S100 -.->|10x pages| S1K
-        S1K -.->|10x pages| S10K
-        S10K -.->|2x pages| S20K
-    end
-    
-    Note[Query time grows<br/>logarithmically<br/>due to HNSW indexing]
-    
-    Scale ~~~ Note
-    
-    style S100 fill:#e8f5e9
-    style S1K fill:#fff9c4
-    style S10K fill:#ffe0b2
-    style S20K fill:#ffccbc
-    style Note fill:#e3f2fd
-```
-
-**Scalability Summary:**
-
-| Pages | Points | Storage | Query Time |
-|-------|--------|---------|------------|
-| 100 | 100 | ~500 MB | ~200ms |
-| 1,000 | 1,000 | ~5 GB | ~250ms |
-| 10,000 | 10,000 | ~50 GB | ~300ms |
-| 20,000 | 20,000 | ~100 GB | ~350ms |
-
-Query time grows logarithmically due to HNSW.
-
-### Memory Requirements
-
-**Ingestion**:
-- ColPali model: ~2 GB VRAM
-- Batch of 4 pages: ~1 GB VRAM
-- **Total**: ~3-4 GB VRAM
-
-**Query**:
-- ColPali model: ~2 GB VRAM
-- Query embedding: ~10 MB
-- **Total**: ~2 GB VRAM
-
----
-
 ## Design Decisions
 
 ### Why ColPali?
@@ -470,13 +308,7 @@ ColPali processes PDFs as images, preserving all visual information.
 
 ### Why Two-Stage Retrieval?
 
-Indexing 1,030-dimensional multivectors with HNSW is:
-
-- **Slow**: 10x longer indexing time
-- **Memory-intensive**: Huge HNSW graph
-- **Diminishing returns**: Prefetch captures 95%+ of relevant pages
-
-Mean-pooling provides a **fast approximation** for prefetch, then MaxSim reranks precisely.
+Indexing 1,030-dimensional multivectors with HNSW is slow and memory-intensive. Mean-pooling provides a **fast approximation** for prefetch, then MaxSim reranks precisely.
 
 ### Why Hybrid Search?
 
@@ -526,4 +358,3 @@ Combining all three provides **robust, query-agnostic** retrieval.
 
 - [Usage Guide](usage.md) - Use the system
 - [API Reference](api/settings.md) - Explore the code
-- [Troubleshooting](troubleshooting.md) - Fix issues

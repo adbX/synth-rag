@@ -58,45 +58,23 @@ from synth_rag.settings import get_qdrant_client
 
 client = get_qdrant_client()
 collections = client.get_collections()
-print(collections)
 ```
 
 ### Work with Directories
 
 ```python
-from synth_rag.settings import (
-    get_manual_input_dir,
-    ensure_tmp_dirs,
-    ensure_logs_dir,
-)
+from synth_rag.settings import get_manual_input_dir, ensure_tmp_dirs
 
 # Get input directory for test subset
 test_dir = get_manual_input_dir("test")
-print(f"Test PDFs: {list(test_dir.glob('*.pdf'))}")
 
 # Ensure tmp directories exist
 pages_dir, text_dir = ensure_tmp_dirs(clear=True)
-print(f"Pages will be saved to: {pages_dir}")
-
-# Ensure logs directory exists
-logs_dir = ensure_logs_dir()
-print(f"Logs will be saved to: {logs_dir}")
-```
-
-### Access Path Constants
-
-```python
-from synth_rag.settings import REPO_ROOT, DOCS_DIR
-
-print(f"Repository root: {REPO_ROOT}")
-print(f"Documents directory: {DOCS_DIR}")
 ```
 
 ---
 
 ## Environment Variables
-
-The following environment variables must be set in `.env`:
 
 ```mermaid
 graph TD
@@ -157,20 +135,3 @@ graph TD
     style Tmp fill:#ffecb3
     style Logs fill:#ffe0b2
 ```
-
-**Path Constants:**
-
-```
-synth-rag/
-├── documents/               # DOCS_DIR
-│   └── midi_synthesizers/  # MIDI_DIR
-│       ├── input/          # INPUT_DIR
-│       │   ├── test/       # Test subset
-│       │   └── full/       # Full collection
-│       └── tmp/            # TMP_DIR
-│           ├── pages/      # TMP_PAGES_DIR (rendered images)
-│           └── text/       # TMP_TEXT_DIR (extracted text)
-└── logs/                   # LOGS_DIR
-    └── manuals_queries/    # MANUAL_QUERY_LOGS_DIR
-```
-

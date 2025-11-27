@@ -6,7 +6,7 @@ Gradio web interface for the Synth-RAG chatbot.
 
 ## Overview
 
-The manuals_ui module provides a web-based chat interface using Gradio. It integrates the agentic RAG workflow with a user-friendly UI.
+The `manuals_ui` module provides a web-based chat interface using Gradio. It integrates the agentic RAG workflow with a user-friendly UI.
 
 ---
 
@@ -14,11 +14,11 @@ The manuals_ui module provides a web-based chat interface using Gradio. It integ
 
 ### Launch UI
 
-bash
+```bash
 uv run python -m synth_rag.manuals_ui
+```
 
-
-Opens automatically in browser at http://localhost:7860.
+Opens automatically in browser at `http://localhost:7860`.
 
 ---
 
@@ -66,41 +66,17 @@ flowchart LR
 
 ### Default Settings
 
-- Collection: midi_manuals
-- Model: gpt-4o-mini
-- Device: mps (auto-detected)
+- Collection: `midi_manuals`
+- Model: `gpt-4o-mini`
+- Device: `mps` (auto-detected)
 - Top-K: 3
 
 ### Customization
 
-Modify manuals_ui.py to change defaults:
+Modify `manuals_ui.py` to change defaults:
 
-python
+```python
 COLLECTION_NAME = "my_custom_collection"
 MODEL_NAME = "gpt-4o"
 DEVICE = "cuda:0"
-
-
----
-
-## Troubleshooting
-
-### Port Already in Use
-
-Error: OSError: [Errno 48] Address already in use
-
-Solution:
-
-bash
-# Kill process on port 7860
-lsof -ti:7860 | xargs kill -9
-
-# Or use different port
-demo.launch(server_port=7861)
-
-
-### UI Not Loading
-
-Check server is running and try different URL formats:
-- http://localhost:7860
-- http://127.0.0.1:7860
+```
