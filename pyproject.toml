@@ -1,7 +1,7 @@
 [project]
-name = "qdrant-init"
+name = "synth-rag"
 version = "0.1.0"
-description = "Add your description here"
+description = "Agentic RAG for Synthesizer manuals"
 readme = "README.md"
 authors = [
     { name = "Adhithya Bhaskar", email = "adhithyabhaskar@gmail.com" }
@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [project.scripts]
-qdrant-init = "qdrant_init:main"
+synth-rag = "synth_rag:main"
 
 [build-system]
 requires = ["hatchling"]

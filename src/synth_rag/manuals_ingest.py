@@ -20,7 +20,7 @@ from semantic_text_splitter import TextSplitter
 from qdrant_client import models
 from qdrant_client.models import PointStruct
 
-from qdrant_init.settings import (
+from synth_rag.settings import (
     get_qdrant_client,
     get_manual_input_dir,
     ensure_tmp_dirs,

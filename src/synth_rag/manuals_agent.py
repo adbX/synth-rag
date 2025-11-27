@@ -19,7 +19,7 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool
 from qdrant_client import models
 
-from qdrant_init.settings import get_qdrant_client, get_api_settings
+from synth_rag.settings import get_qdrant_client, get_api_settings
 
 
 # System prompt for the agent

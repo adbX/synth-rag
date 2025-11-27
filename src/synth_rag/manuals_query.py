@@ -14,7 +14,7 @@ from colpali_engine.models import ColPali, ColPaliProcessor
 from fastembed import TextEmbedding, SparseTextEmbedding
 from qdrant_client import models
 
-from qdrant_init.settings import (
+from synth_rag.settings import (
     get_qdrant_client,
     ensure_logs_dir,
 )

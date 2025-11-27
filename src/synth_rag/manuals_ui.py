@@ -8,11 +8,11 @@ import os
 import gradio as gr
 from langchain_core.messages import ToolMessage
 
-from qdrant_init.manuals_agent import (
+from synth_rag.manuals_agent import (
     create_agent_graph,
     ManualsRetriever,
 )
-from qdrant_init.settings import get_api_settings
+from synth_rag.settings import get_api_settings
 
 
 def chat_function(message: str, history: list, model: str, collection: str, device: str, top_k: int):
