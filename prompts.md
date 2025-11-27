@@ -205,3 +205,38 @@ ColPali ready
 
 ❯ uv run python -c "from qdrant_client import QdrantClient; print('Qdrant client ok')"
 Qdrant client ok
+
+# frontend gradio
+
+Your role is to build a frontend for my RAG chatbot using gradio. The readme of my project is in the `README.md` file. The document for gradio relevant documentation to build chatbots with gradio is in the `documents/ui-docs/gradio.md` file. Be as simple and minimal as possible.
+
+# add references and prioritize pdfs
+
+Modify my chatbot to add references to page numbers for each part of answer. Also make sure to priorize answers from the the documents/manuals first and then add the web search results at the end in a separate section. The readme of my project is in the `README.md` file.
+
+# fix missing refs
+
+The chatbot does not have a section for the local documents/manuals at all. I am only getting web search results as seen in the conversation below. Help me fix this: 
+
+```
+user: How can I setup encoders of the Faderfox EC-4 MIDI controller such that encoders 2, 3 & 4 control the Reverb of the Digitone II on MIDI channels 6, 7, & 8 respectively? Then, I also want to use encoder 1 to control encoders 2, 3 & 4 simultaneously on the faderfox
+
+assistant: ## Information from Web Search
+
+### Faderfox EC-4 Setup
+The Faderfox EC-4 is a MIDI controller with 16 gridless push encoders. It allows for the creation of up to 16 individual groups, enabling control of up to 256 parameters per group. The EC-4 features a "Link function" that can link up to 16 encoders or pushbuttons for multiple commands, which would be useful for your requirement to control multiple encoders simultaneously (Faderfox EC4, Perfect Circuit).
+
+To set up the encoders:
+1. **Choose the Encoder Setup**: You can select the encoder setup and/or group by pressing one of the grey SETUP or GROUP keys. The display will show 16 setup or group names in a 4x4 grid (micromodul EC4 User manual).
+
+2. **Link Function**: Use the link function to link encoders 2, 3, and 4 to encoder 1. This will allow encoder 1 to control the other three encoders simultaneously.
+
+3. **MIDI Channel Assignment**: Assign MIDI channels to the encoders. You can set encoders 2, 3, and 4 to control the Reverb on the Digitone II by assigning them to MIDI channels 6, 7, and 8 respectively.
+
+### Digitone II MIDI Control
+Unfortunately, I couldn't retrieve specific information about setting up MIDI control on the Digitone II from the web search. However, typically, you would need to ensure that the Digitone II is set to receive MIDI CC messages on the appropriate channels and that the parameters you wish to control (Reverb in this case) are mapped to the corresponding MIDI CC numbers.
+
+For detailed setup, you would typically refer to the Digitone II's MIDI implementation chart in its manual to find the correct CC numbers for Reverb control and ensure the device is set to receive on the specified channels.
+
+If you have access to the manuals, they would provide the most accurate and detailed instructions for both devices.
+```

@@ -12,7 +12,7 @@ from typing import Annotated, TypedDict
 import torch
 from colpali_engine.models import ColPali, ColPaliProcessor
 from fastembed import TextEmbedding, SparseTextEmbedding
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
@@ -20,6 +20,27 @@ from langchain_core.tools import tool
 from qdrant_client import models
 
 from qdrant_init.settings import get_qdrant_client, get_api_settings
+
+
+# System prompt for the agent
+SYSTEM_PROMPT = """You are a helpful assistant that answers questions about MIDI synthesizers.
+
+CRITICAL TOOL USAGE RULES:
+1. You MUST ALWAYS call manuals_retriever_tool FIRST for every question - no exceptions.
+2. After getting results from manuals_retriever_tool, use that information as your PRIMARY source.
+3. Only call web_search_tool AFTER you have already called manuals_retriever_tool.
+4. If manuals_retriever_tool returns "No relevant information found", then you may use web_search_tool.
+
+RESPONSE FORMAT:
+1. Start with "## Information from Manuals" section containing answers based on manual content.
+2. ALWAYS cite manual sources in this exact format: (Manual Name, Page X)
+3. If you also used web search, add a separate "## Additional Web Search Results" section at the end.
+
+Example citation format:
+"The Digitone II has 8 tracks (Digitone-2-User-Manual, Page 12). Each track can be configured independently (Digitone-2-User-Manual, Page 15)."
+
+IMPORTANT: You MUST call manuals_retriever_tool before doing anything else. Do not skip this step.
+"""
 
 
 # State definition for LangGraph
@@ -155,8 +176,9 @@ def create_manuals_retriever_tool(retriever: ManualsRetriever):
     @tool("manuals_retriever_tool")
     def retrieve_manuals(query: str) -> str:
         """
-        Search and return information from PDF manuals about MIDI synthesizers.
-        Use this tool to find specific information about synthesizer features, settings, and operations.
+        PRIMARY TOOL - MUST be called FIRST for every question.
+        Search PDF manuals for MIDI synthesizer information including features, settings, operations, and technical details.
+        This tool searches indexed PDF manuals and returns relevant pages with page numbers for citation.
         """
         results = retriever.retrieve(query)
         
@@ -185,8 +207,9 @@ def create_brave_search_tool():
     @tool("web_search_tool")
     def search_web(query: str) -> str:
         """
-        Search the web for current information about MIDI synthesizers, music production, or related topics.
-        Use this tool when the manuals don't contain the answer or when you need general information.
+        SECONDARY TOOL - Only use AFTER manuals_retriever_tool has been called.
+        Search the web for supplementary information about MIDI synthesizers or music production.
+        Use only when manuals don't have sufficient information or for general context.
         """
         search = BraveSearch.from_api_key(
             api_key=api_settings.brave_key,
@@ -223,6 +246,11 @@ def create_agent_graph(
     # Define agent node
     def agent(state: State):
         messages = state["messages"]
+        
+        # Prepend system message if not already present
+        if not messages or not isinstance(messages[0], SystemMessage):
+            messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
+        
         response = llm_with_tools.invoke(messages)
         return {"messages": [response]}
     
