@@ -12,3 +12,6 @@ wheels/
 .venv
 # documents
 tmp/
+
+# mkdocs
+site/

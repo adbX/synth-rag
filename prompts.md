@@ -374,3 +374,74 @@ I have changed the name of my project to `synth-rag`. Give me a list of all the 
 # mkdocs
 
 I have mkdocs running with uv (`uv run mkdocs serve`). Create a comprehensive set of documentation using my project readme `README.md` and the scripts in the `src/synth_rag/` folder. Update the mkdocs.yml file to reflect the new name and structure. I also have mkdocstrings plugin (https://mkdocstrings.github.io/python/usage/) for python docstrings. Use it to document the code in the `src/synth_rag/` folder.
+
+# mermaidjs
+
+For my mkdocs documentation, I want to use mermaidjs to make diagrams, flowcharts, tables, etc. Use the documentation in `documents/mkdocs-docs/mermaidjs.md` for reference. Update all the documentation in `/docs/` to use the mermaidjs where applicable.
+
+## Summary
+
+I've successfully updated your mkdocs documentation to use mermaidjs for diagrams, flowcharts, and visual representations. Here's what was done:
+
+### 1. **Configuration** (`mkdocs.yml`)
+- Added mermaidjs support to the `pymdownx.superfences` extension
+
+### 2. **Architecture** (`docs/architecture.md`)
+- ✅ System overview flowchart (replaces ASCII art)
+- ✅ ColPali variants comparison diagram
+- ✅ Agentic layer state diagram
+- ✅ Indexing performance gantt chart
+- ✅ Query performance comparison
+- ✅ Scalability visualization
+- ✅ Hybrid search advantages flowchart
+
+### 3. **Index Page** (`docs/index.md`)
+- ✅ Technology stack diagram (replaces table)
+
+### 4. **Quickstart** (`docs/quickstart.md`)
+- ✅ Basic usage workflow flowchart
+
+### 5. **Setup Guide** (`docs/setup.md`)
+- ✅ Directory structure tree diagram
+- ✅ Model downloads visualization
+
+### 6. **Usage Guide** (`docs/usage.md`)
+- ✅ Ingestion pipeline flowchart
+- ✅ Query output format structure
+- ✅ First-time setup workflow
+- ✅ Agent workflow (already had mermaid, kept it)
+
+### 7. **Troubleshooting** (`docs/troubleshooting.md`)
+- ✅ Quick diagnostic flowchart
+- ✅ Memory issue decision tree
+
+### 8. **API Reference - Agent** (`docs/api/manuals_agent.md`)
+- ✅ LangGraph flow diagram (replaces ASCII art)
+- ✅ Agent execution sequence diagram
+- ✅ Model selection comparison
+- ✅ Query timing gantt chart
+
+### 9. **API Reference - Ingest** (`docs/api/manuals_ingest.md`)
+- ✅ Pipeline flowchart with timing
+
+### 10. **API Reference - Query** (`docs/api/manuals_query.md`)
+- ✅ Search pipeline sequence diagram
+- ✅ Scaling visualization
+
+### 11. **API Reference - Settings** (`docs/api/settings.md`)
+- ✅ Directory structure tree
+- ✅ Environment variables flow
+
+### 12. **API Reference - UI** (`docs/api/manuals_ui.md`)
+- ✅ Chat interface flowchart
+
+All diagrams use appropriate mermaid diagram types:
+- **Flowcharts** for processes and workflows
+- **Sequence diagrams** for interactions
+- **State diagrams** for state machines
+- **Gantt charts** for timing visualizations
+- **Graph diagrams** for relationships and structures
+
+The documentation now has a more professional, visual appearance while maintaining all the technical accuracy. The build completes successfully! 🎉
+
+#
