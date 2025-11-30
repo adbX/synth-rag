@@ -9,6 +9,7 @@ A retrieval-augmented generation (RAG) system for querying PDF manuals of MIDI s
 - **Two-Stage Retrieval**: Fast first-stage retrieval with mean-pooled vectors, precise reranking with original multivectors
 - **Agentic RAG**: LangGraph-powered agent that can query manuals and search the web
 - **Scalable**: Optimized for large PDF collections with efficient indexing
+- **Benchmarking**: Comprehensive evaluation using RAGBench dataset with RAGAS and TruLens metrics
 
 ## Quickstart
 
@@ -145,6 +146,39 @@ uv run python -m synth_rag.manuals_agent \
 2. Decides whether to use manual retrieval tool or web search tool
 3. Retrieves relevant information
 4. Generates a grounded answer with citations
+
+### 4. Benchmarking
+
+Evaluate system performance using the RAGBench dataset:
+
+```bash
+# 1. Ingest RAGBench documents
+uv run python -m synth_rag.benchmark_ingest \
+    --dataset emanual \
+    --split all \
+    --recreate-collection
+
+# 2. Run benchmark
+uv run python -m synth_rag.benchmark_runner \
+    --dataset emanual \
+    --split test \
+    --model gpt-4o-mini \
+    --top-k 5
+
+# 3. Compute metrics (RAGAS + TruLens)
+uv run python -m synth_rag.benchmark_metrics \
+    --results-file logs/benchmark_ragbench/emanual/20251130_120000_raw_results.jsonl
+```
+
+**Supported datasets**: emanual, covidqa, cuad, delucionqa, expertqa, finqa, hagrid, hotpotqa, msmarco, pubmedqa, tatqa, techqa
+
+**Metrics computed**:
+- RAGAS: faithfulness, context_relevancy
+- TruLens: groundedness, context_relevance
+- Aggregate: hallucination AUROC, relevance RMSE
+- Performance: query time, generation time
+
+See [Benchmarking Guide](docs/benchmarking.md) for detailed instructions.
 
 ## Architecture
 

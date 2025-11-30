@@ -73,4 +73,5 @@ graph TD
 - [Setup Instructions](setup.md) - Installation guide
 - [Usage Examples](usage.md) - Learn how to use each component
 - [Architecture](architecture.md) - Understand the system design
+- [Benchmarking Guide](benchmarking.md) - Evaluate performance with RAGBench
 - [API Reference](api/settings.md) - Explore the codebase

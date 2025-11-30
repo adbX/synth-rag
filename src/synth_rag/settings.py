@@ -22,6 +22,7 @@ TMP_PAGES_DIR = TMP_DIR / "pages"
 TMP_TEXT_DIR = TMP_DIR / "text"
 LOGS_DIR = REPO_ROOT / "logs"
 MANUAL_QUERY_LOGS_DIR = LOGS_DIR / "manuals_queries"
+BENCHMARK_LOGS_DIR = LOGS_DIR / "benchmark_ragbench"
 
 
 @dataclass(frozen=True)
@@ -77,4 +78,28 @@ def ensure_tmp_dirs(clear: bool = False) -> tuple[Path, Path]:
 def ensure_logs_dir() -> Path:
     MANUAL_QUERY_LOGS_DIR.mkdir(parents=True, exist_ok=True)
     return MANUAL_QUERY_LOGS_DIR
+
+
+def ensure_benchmark_logs_dir(dataset_name: str) -> Path:
+    """Ensure benchmark logs directory exists for a specific dataset."""
+    dataset_logs_dir = BENCHMARK_LOGS_DIR / dataset_name
+    dataset_logs_dir.mkdir(parents=True, exist_ok=True)
+    return dataset_logs_dir
+
+
+# RAGBench dataset names
+RAGBENCH_DATASETS = [
+    "emanual",
+    "covidqa",
+    "cuad",
+    "delucionqa",
+    "expertqa",
+    "finqa",
+    "hagrid",
+    "hotpotqa",
+    "msmarco",
+    "pubmedqa",
+    "tatqa",
+    "techqa",
+]
 

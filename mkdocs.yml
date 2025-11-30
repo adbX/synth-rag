@@ -42,6 +42,7 @@ nav:
   - Setup: setup.md
   - Usage: usage.md
   - Architecture: architecture.md
+  - Benchmarking: benchmarking.md
   - API Reference:
     - Settings: api/settings.md
     - Ingestion: api/manuals_ingest.md
