@@ -1,0 +1,10 @@
+{
+  "question": "How do I set up MIDI channels?",
+  "collection": "midi_manuals",
+  "top_k": 5,
+  "prefetch_limit": 50,
+  "manual_filter": null,
+  "query_time_seconds": 0.232221,
+  "results": [],
+  "timestamp": "2025-12-06T08:43:24.548459"
+}

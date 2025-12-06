@@ -1,8 +1,3 @@
----
-hide:
-  - navigation
----
-
 # Synth-RAG
 
 A retrieval-augmented generation (RAG) system for querying PDF manuals of MIDI synthesizers using ColPali multivector embeddings, hybrid search, and agentic workflows with LangGraph.

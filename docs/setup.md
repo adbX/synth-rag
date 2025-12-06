@@ -1,8 +1,3 @@
----
-hide:
-  - navigation
----
-
 # Setup Guide
 
 ## System Requirements

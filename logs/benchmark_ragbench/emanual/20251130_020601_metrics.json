@@ -1,0 +1,6 @@
+{
+  "num_examples": 132,
+  "mean_query_time": 0.14866622727272727,
+  "mean_generation_time": 3.1803818257575758,
+  "mean_total_time": 3.329048053030303
+}

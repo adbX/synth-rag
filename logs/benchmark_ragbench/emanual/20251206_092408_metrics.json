@@ -1,0 +1,16 @@
+{
+  "num_examples": 10,
+  "mean_query_time": 0.11190169999999999,
+  "mean_generation_time": 3.2414296,
+  "mean_total_time": 3.3533313,
+  "ragas_faithfulness_mean": 0.7946428571428571,
+  "ragas_faithfulness_std": 0.2281750345061486,
+  "ragas_answer_relevancy_mean": 0.7345711849189807,
+  "ragas_answer_relevancy_std": 0.36852952289704727,
+  "trulens_groundedness_mean": 0.8520268620268621,
+  "trulens_groundedness_std": 0.11808517942945322,
+  "trulens_context_relevance_mean": 0.6333333333333333,
+  "trulens_context_relevance_std": 0.27688746209726917,
+  "hallucination_auroc_ragas": NaN,
+  "relevance_rmse_ragas": 0.6711893187693748
+}

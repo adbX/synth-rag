@@ -6,30 +6,43 @@ Uses ragas, trulens, and custom evaluation functions.
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
+import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from datasets import Dataset
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
+
+from synth_rag.settings import get_api_settings
+
+# Set API keys from environment
+api_settings = get_api_settings()
+os.environ["OPENAI_API_KEY"] = api_settings.openai_key
 
 # Add ragbench code to path
 RAGBENCH_CODE_DIR = Path(__file__).resolve().parents[3] / "prompts" / "ragbench-main"
 sys.path.insert(0, str(RAGBENCH_CODE_DIR))
 
+# Import after path is set
 from ragas import evaluate
-from ragas.metrics import faithfulness, context_relevancy
+from ragas.metrics import faithfulness, answer_relevancy
+from ragas.llms import LangchainLLMWrapper
+from langchain_openai import ChatOpenAI
 
-# Import ragbench evaluation utilities
+# Import TruLens (new API)
 try:
-    from ragbench.trulens_async import AsyncTrulensOpenAI
+    from trulens.providers.openai import OpenAI as TrulensOpenAI
 except ImportError:
-    print("Warning: Could not import AsyncTrulensOpenAI from ragbench")
-    AsyncTrulensOpenAI = None
+    try:
+        # Fallback to old API if new one not available
+        from trulens_eval.feedback.provider.openai import OpenAI as TrulensOpenAI
+    except ImportError:
+        print("Warning: Could not import TruLens OpenAI provider")
+        TrulensOpenAI = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,12 +64,6 @@ def parse_args() -> argparse.Namespace:
         "--skip-trulens",
         action="store_true",
         help="Skip trulens metrics computation",
-    )
-    parser.add_argument(
-        "--max-concurrent",
-        type=int,
-        default=10,
-        help="Max concurrent requests for trulens evaluation",
     )
     return parser.parse_args()
 
@@ -104,7 +111,7 @@ def auroc(trues: list[bool], preds: list[float]) -> float:
 
 def compute_ragas_metrics(results: list[dict]) -> list[dict]:
     """
-    Compute RAGAS metrics (faithfulness, context_relevancy).
+    Compute RAGAS metrics (faithfulness, answer_relevancy).
 
     Returns:
         Updated results with ragas metrics
@@ -130,10 +137,14 @@ def compute_ragas_metrics(results: list[dict]) -> list[dict]:
 
     print(f"Evaluating {len(ragas_dataset)} examples with RAGAS...")
 
-    # Run RAGAS evaluation
+    # Configure RAGAS with OpenAI LLM
+    evaluator_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    
+    # Run RAGAS evaluation with configured LLM
     ragas_result = evaluate(
         ragas_dataset,
-        metrics=[faithfulness, context_relevancy],
+        metrics=[faithfulness, answer_relevancy],
+        llm=evaluator_llm,
     )
 
     # Convert to DataFrame
@@ -142,65 +153,75 @@ def compute_ragas_metrics(results: list[dict]) -> list[dict]:
     # Add metrics back to results
     for i, result in enumerate(results):
         result["ragas_faithfulness"] = ragas_df.iloc[i]["faithfulness"]
-        result["ragas_context_relevancy"] = ragas_df.iloc[i]["context_relevancy"]
+        result["ragas_answer_relevancy"] = ragas_df.iloc[i]["answer_relevancy"]
 
     print("✓ RAGAS metrics computed")
-    print(f"  - Mean faithfulness: {ragas_df['faithfulness'].mean():.3f}")
-    print(f"  - Mean context_relevancy: {ragas_df['context_relevancy'].mean():.3f}")
+    
+    # Handle potential NaN values in output
+    faithfulness_mean = ragas_df['faithfulness'].mean()
+    answer_relevancy_mean = ragas_df['answer_relevancy'].mean()
+    
+    if pd.notna(faithfulness_mean):
+        print(f"  - Mean faithfulness: {faithfulness_mean:.3f}")
+    else:
+        print(f"  - Mean faithfulness: NaN (check for errors)")
+        
+    if pd.notna(answer_relevancy_mean):
+        print(f"  - Mean answer_relevancy: {answer_relevancy_mean:.3f}")
+    else:
+        print(f"  - Mean answer_relevancy: NaN (check for errors)")
 
     return results
 
 
-async def compute_trulens_metrics_async(
-    results: list[dict], max_concurrent: int = 10
-) -> list[dict]:
+def compute_trulens_metrics(results: list[dict]) -> list[dict]:
     """
-    Compute TruLens metrics (groundedness, context_relevance) asynchronously.
+    Compute TruLens metrics (groundedness, context_relevance) synchronously.
 
     Returns:
         Updated results with trulens metrics
     """
     print("\n" + "=" * 80)
-    print("Computing TruLens Metrics (Async)")
+    print("Computing TruLens Metrics")
     print("=" * 80)
 
-    if AsyncTrulensOpenAI is None:
-        print("✗ AsyncTrulensOpenAI not available, skipping TruLens metrics")
+    if TrulensOpenAI is None:
+        print("✗ TruLens OpenAI provider not available, skipping TruLens metrics")
         return results
 
-    # Initialize TruLens
-    async_trulens = AsyncTrulensOpenAI()
-
-    # Prepare data
-    ids = [result["example_id"] for result in results]
-    contexts = [result["retrieved_contexts"] for result in results]
-    questions = [result["question"] for result in results]
-    responses = [result["generated_response"] for result in results]
+    # Initialize TruLens provider
+    trulens_provider = TrulensOpenAI()
 
     print(f"Evaluating {len(results)} examples with TruLens...")
+    print("Note: Processing sequentially (non-concurrent)")
 
-    # Run async evaluation
-    trulens_results = await async_trulens.annotate(
-        ids=ids,
-        contexts=contexts,
-        questions=questions,
-        responses=responses,
-        metrics=["groundedness", "context_relevance"],
-        max_concurrent=max_concurrent,
-    )
+    # Process each result sequentially
+    for result in tqdm(results, desc="TruLens evaluation"):
+        contexts = result["retrieved_contexts"]
+        question = result["question"]
+        response = result["generated_response"]
 
-    # Add metrics back to results
-    for i, result in enumerate(results):
-        annotation = trulens_results[i]
-        
-        result["trulens_groundedness"] = (
-            annotation.groundedness.value if annotation.groundedness else None
-        )
-        result["trulens_context_relevance"] = (
-            annotation.context_relevance.value if annotation.context_relevance else None
-        )
+        try:
+            # Compute groundedness (faithfulness)
+            groundedness_score = trulens_provider.groundedness_measure_with_cot_reasons(
+                source=contexts,
+                statement=response
+            )
+            result["trulens_groundedness"] = groundedness_score[0] if groundedness_score else None
 
-    print("✓ TruLens metrics computed")
+            # Compute context relevance
+            context_relevance_score = trulens_provider.context_relevance_with_cot_reasons(
+                question=question,
+                context=contexts
+            )
+            result["trulens_context_relevance"] = context_relevance_score[0] if context_relevance_score else None
+
+        except Exception as e:
+            print(f"\n  Warning: Error evaluating example {result['example_id']}: {e}")
+            result["trulens_groundedness"] = None
+            result["trulens_context_relevance"] = None
+
+    print("\n✓ TruLens metrics computed")
     
     groundedness_values = [
         r["trulens_groundedness"] for r in results if r.get("trulens_groundedness") is not None
@@ -238,21 +259,29 @@ def compute_aggregate_metrics(results: list[dict]) -> dict:
     )
     metrics["mean_total_time"] = np.mean([r["total_time_seconds"] for r in results])
 
-    # RAGAS metrics (if available)
+    # RAGAS metrics (if available, filtering out NaN values)
     ragas_faithfulness = [
-        r["ragas_faithfulness"] for r in results if "ragas_faithfulness" in r
+        r["ragas_faithfulness"] for r in results 
+        if "ragas_faithfulness" in r and not pd.isna(r["ragas_faithfulness"])
     ]
-    ragas_context_relevancy = [
-        r["ragas_context_relevancy"] for r in results if "ragas_context_relevancy" in r
+    ragas_answer_relevancy = [
+        r["ragas_answer_relevancy"] for r in results 
+        if "ragas_answer_relevancy" in r and not pd.isna(r["ragas_answer_relevancy"])
     ]
 
     if ragas_faithfulness:
         metrics["ragas_faithfulness_mean"] = np.mean(ragas_faithfulness)
         metrics["ragas_faithfulness_std"] = np.std(ragas_faithfulness)
+    else:
+        metrics["ragas_faithfulness_mean"] = None
+        metrics["ragas_faithfulness_std"] = None
     
-    if ragas_context_relevancy:
-        metrics["ragas_context_relevancy_mean"] = np.mean(ragas_context_relevancy)
-        metrics["ragas_context_relevancy_std"] = np.std(ragas_context_relevancy)
+    if ragas_answer_relevancy:
+        metrics["ragas_answer_relevancy_mean"] = np.mean(ragas_answer_relevancy)
+        metrics["ragas_answer_relevancy_std"] = np.std(ragas_answer_relevancy)
+    else:
+        metrics["ragas_answer_relevancy_mean"] = None
+        metrics["ragas_answer_relevancy_std"] = None
 
     # TruLens metrics (if available)
     trulens_groundedness = [
@@ -275,6 +304,7 @@ def compute_aggregate_metrics(results: list[dict]) -> dict:
         metrics["trulens_context_relevance_std"] = np.std(trulens_context_relevance)
 
     # Hallucination detection (using RAGAS faithfulness as proxy for adherence)
+    metrics["hallucination_auroc_ragas"] = None
     if ragas_faithfulness:
         ground_truth_adherence = [
             r["ground_truth_adherence_score"]
@@ -282,7 +312,7 @@ def compute_aggregate_metrics(results: list[dict]) -> dict:
             if r.get("ground_truth_adherence_score") is not None
         ]
         
-        if ground_truth_adherence:
+        if ground_truth_adherence and len(ground_truth_adherence) == len(ragas_faithfulness):
             # Convert adherence to hallucination (invert)
             trues_hallucination = ~np.array(ground_truth_adherence, dtype=bool)
             preds_hallucination = 1 - np.array(ragas_faithfulness, dtype=float)
@@ -293,22 +323,25 @@ def compute_aggregate_metrics(results: list[dict]) -> dict:
                 )
             except Exception as e:
                 print(f"  Warning: Could not compute hallucination AUROC: {e}")
+                metrics["hallucination_auroc_ragas"] = None
 
     # Relevance RMSE
-    if ragas_context_relevancy:
+    metrics["relevance_rmse_ragas"] = None
+    if ragas_answer_relevancy:
         ground_truth_relevance = [
             r["ground_truth_relevance_score"]
             for r in results
             if r.get("ground_truth_relevance_score") is not None
         ]
         
-        if ground_truth_relevance:
+        if ground_truth_relevance and len(ground_truth_relevance) == len(ragas_answer_relevancy):
             try:
                 metrics["relevance_rmse_ragas"] = rmse(
-                    ground_truth_relevance, ragas_context_relevancy
+                    ground_truth_relevance, ragas_answer_relevancy
                 )
             except Exception as e:
                 print(f"  Warning: Could not compute relevance RMSE: {e}")
+                metrics["relevance_rmse_ragas"] = None
 
     # Print summary
     print(f"✓ Processed {metrics['num_examples']} examples")
@@ -316,17 +349,17 @@ def compute_aggregate_metrics(results: list[dict]) -> dict:
     print(f"✓ Mean generation time: {metrics['mean_generation_time']:.3f}s")
     print(f"✓ Mean total time: {metrics['mean_total_time']:.3f}s")
 
-    if "ragas_faithfulness_mean" in metrics:
+    if "ragas_faithfulness_mean" in metrics and metrics['ragas_faithfulness_mean'] is not None:
         print(f"✓ RAGAS faithfulness: {metrics['ragas_faithfulness_mean']:.3f} ± {metrics['ragas_faithfulness_std']:.3f}")
-    if "ragas_context_relevancy_mean" in metrics:
-        print(f"✓ RAGAS context relevancy: {metrics['ragas_context_relevancy_mean']:.3f} ± {metrics['ragas_context_relevancy_std']:.3f}")
-    if "trulens_groundedness_mean" in metrics:
+    if "ragas_answer_relevancy_mean" in metrics and metrics['ragas_answer_relevancy_mean'] is not None:
+        print(f"✓ RAGAS context relevancy: {metrics['ragas_answer_relevancy_mean']:.3f} ± {metrics['ragas_answer_relevancy_std']:.3f}")
+    if "trulens_groundedness_mean" in metrics and metrics['trulens_groundedness_mean'] is not None:
         print(f"✓ TruLens groundedness: {metrics['trulens_groundedness_mean']:.3f} ± {metrics['trulens_groundedness_std']:.3f}")
-    if "trulens_context_relevance_mean" in metrics:
+    if "trulens_context_relevance_mean" in metrics and metrics['trulens_context_relevance_mean'] is not None:
         print(f"✓ TruLens context relevance: {metrics['trulens_context_relevance_mean']:.3f} ± {metrics['trulens_context_relevance_std']:.3f}")
-    if "hallucination_auroc_ragas" in metrics:
+    if "hallucination_auroc_ragas" in metrics and metrics['hallucination_auroc_ragas'] is not None:
         print(f"✓ Hallucination AUROC (RAGAS): {metrics['hallucination_auroc_ragas']:.3f}")
-    if "relevance_rmse_ragas" in metrics:
+    if "relevance_rmse_ragas" in metrics and metrics['relevance_rmse_ragas'] is not None:
         print(f"✓ Relevance RMSE (RAGAS): {metrics['relevance_rmse_ragas']:.3f}")
 
     return metrics
@@ -361,7 +394,7 @@ def save_results(
     print(f"✓ Saved summary CSV to: {summary_path}")
 
 
-async def main_async():
+def main():
     args = parse_args()
 
     # Load results
@@ -381,9 +414,7 @@ async def main_async():
     # Compute TruLens metrics
     if not args.skip_trulens:
         try:
-            results = await compute_trulens_metrics_async(
-                results, max_concurrent=args.max_concurrent
-            )
+            results = compute_trulens_metrics(results)
         except Exception as e:
             print(f"✗ Error computing TruLens metrics: {e}")
             import traceback
@@ -398,10 +429,6 @@ async def main_async():
     print("\n" + "=" * 80)
     print("✅ Metrics computation complete!")
     print("=" * 80)
-
-
-def main():
-    asyncio.run(main_async())
 
 
 if __name__ == "__main__":

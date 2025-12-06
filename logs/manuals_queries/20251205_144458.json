@@ -1,0 +1,10 @@
+{
+  "question": "In the FM Drum Machine of Digitone II, what are all the ways to increase the decay time?",
+  "collection": "midi_manuals",
+  "top_k": 5,
+  "prefetch_limit": 50,
+  "manual_filter": null,
+  "query_time_seconds": 0.315928,
+  "results": [],
+  "timestamp": "2025-12-05T14:44:58.131798"
+}

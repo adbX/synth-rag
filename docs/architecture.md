@@ -1,8 +1,3 @@
----
-hide:
-  - navigation
----
-
 # Architecture
 
 ## System Overview

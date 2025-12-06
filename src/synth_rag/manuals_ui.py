@@ -127,13 +127,13 @@ def create_ui():
             ],
             examples=[
                 ["How can I setup encoders of the Faderfox EC-4 MIDI controller such that encoders 2, 3 & 4 control the Reverb of the Digitone II on MIDI channels 6, 7, & 8 respectively? Then, I also want to use encoder 1 to control encoders 2, 3 & 4 simultaneously on the faderfox", "gpt-4o", "midi_manuals", "mps", 5],
-                ["What are all the ways to increase decay times in the FM Drum Machine of Digitone II?", "gpt-4o-mini", "midi_manuals", "mps", 3],
-                ["What synthesis methods does the Analog Four use?", "gpt-4o-mini", "midi_manuals", "mps", 3],
+                ["What are all the ways to increase decay times in the FM Drum Machine of Digitone II?", "gpt-4o", "midi_manuals", "mps", 5],
+                ["What synthesis methods does the Digitone II use?", "gpt-4o-mini", "midi_manuals", "mps", 3],
             ],
             title=None,  # Already have title above
             description=None,  # Already have description above
-            chatbot=gr.Chatbot(height=500),
-            textbox=gr.Textbox(placeholder="Ask a question about MIDI synthesizers...", scale=7),
+            chatbot=gr.Chatbot(height=400),
+            textbox=gr.Textbox(placeholder="Ask a question about MIDI synthesizers...", scale=7, submit_btn=True),
         )
         
         gr.Markdown(
