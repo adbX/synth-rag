@@ -18,10 +18,20 @@ Synth-RAG provides three main interfaces:
 uv run python -m synth_rag.manuals_ingest \
     --subset test \
     --collection midi_manuals \
+    --device cpu \
+    --recreate-collection \
+    --clear-tmp
+```
+
+```bash
+uv run python -m synth_rag.manuals_ingest \
+    --subset full \
+    --collection midi_manuals_full \
     --device mps \
     --recreate-collection \
     --clear-tmp
 ```
+
 
 ### Options
 

@@ -22,24 +22,16 @@ Set PlaybackSpeed 3.0
 Sleep 500ms
 
 # Show the command being typed
-Type "# Run RAGBench evaluation on emanual test split"
+Type "# Run benchmark evaluation on RAGBench emanual test split"
 Enter
 Sleep 500ms
 
-Type "uv run python -m synth_rag.benchmark_runner \"
-Enter
-Type "    --dataset emanual \"
-Enter
-Type "    --split test \"
-Enter
-Type "    --model gpt-4o-mini \"
-Enter
-Type "    --top-k 5"
+Type "uv run python -m synth_rag.benchmark_runner --dataset emanual --split test --collection ragbench_emanual --model gpt-4o-mini --top-k 5 --max-examples 1"
 Sleep 1s
 Enter
 
 # Wait for the benchmark to complete (30 min timeout for full evaluation)
-Wait+Screen@30m /Benchmark complete|Results saved|examples evaluated|Summary:/
+Wait+Screen@5m /Next step/
 
 # Give time to see the final metrics output
 Sleep 5s
