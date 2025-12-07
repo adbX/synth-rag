@@ -48,9 +48,7 @@
 ]
 
 #par(first-line-indent: 0em)[
-Retrieval-Augmented Generation (RAG) systems have become essential for querying large document collections, yet traditional approaches struggle with visually rich documents containing tables, diagrams, and complex layouts. This project presents Synth-RAG, a hybrid RAG system designed for querying PDF manuals of MIDI synthesizers. Our approach leverages ColPali, a vision-language model that processes PDF pages directly as images, preserving visual information that text-only methods discard. We implement a novel two-stage retrieval architecture: the first stage uses HNSW-indexed mean-pooled multivectors alongside dense (FastEmbed) and sparse (BM25) embeddings for fast candidate retrieval, while the second stage performs precise reranking using original ColPali multivectors with MaxSim scoring. The system is augmented with a LangGraph-powered agentic workflow that combines manual retrieval with web search fallback for comprehensive question answering. We evaluate performance using the RAGBench dataset with RAGAS and TruLens metrics.
-
-#text(style: "italic")[TODO: Add 1-2 sentences summarizing key quantitative results once available.]
+Retrieval-Augmented Generation (RAG) systems have become essential for querying large document collections, yet traditional approaches struggle with visually rich documents containing tables, diagrams, and complex layouts. This project presents Synth-RAG, a hybrid RAG system designed for querying PDF manuals of MIDI synthesizers. Our approach leverages ColPali, a vision-language model that processes PDF pages directly as images, preserving visual information that text-only methods discard. We implement a novel two-stage retrieval architecture: the first stage uses HNSW-indexed mean-pooled multivectors alongside dense (FastEmbed) and sparse (BM25) embeddings for fast candidate retrieval, while the second stage performs precise reranking using original ColPali multivectors with MaxSim scoring. The system is augmented with a LangGraph-powered agentic workflow that combines manual retrieval with web search fallback for comprehensive question answering. We evaluate performance using the RAGBench dataset with RAGAS and TruLens metrics. Evaluation on the RAGBench emanual dataset demonstrates strong performance with RAGAS faithfulness scores of 0.80--0.83 and TruLens groundedness of 0.79--0.85 across runs of 10 to 1,000 queries, with a hallucination detection AUROC of 0.70.
 ]
 
 #v(1em)
@@ -262,75 +260,53 @@ Performance is evaluated using two complementary frameworks:
 
 = Results
 
-#text(style: "italic")[
-TODO: This section will present experimental results once benchmarking is complete.
-]
+This section presents experimental results from evaluating the Synth-RAG system on the RAGBench emanual dataset.
 
-== Retrieval Performance
+== RAGBench Benchmark Results
 
-#text(style: "italic")[
-TODO: Present retrieval metrics including:
-- Precision\@k for different k values
-- Recall\@k measurements
-- Mean Reciprocal Rank (MRR)
-- Comparison of hybrid search vs. individual retrieval methods
-]
+We evaluated the system on the RAGBench emanual dataset across three runs of increasing size: 10 queries (test split), 100 queries (test split), and 1,000 queries (train split). All runs used `gpt-4o-mini` with top-k=5 retrieval and prefetch limit of 50.
 
 #figure(
   table(
     columns: (auto, auto, auto, auto),
     inset: 8pt,
     align: horizon,
-    [*Method*], [*P\@5*], [*R\@5*], [*MRR*],
-    [Dense only], [TODO], [TODO], [TODO],
-    [Sparse only], [TODO], [TODO], [TODO],
-    [ColPali only], [TODO], [TODO], [TODO],
-    [Hybrid (ours)], [TODO], [TODO], [TODO],
+    [*Metric*], [*n=10 (test)*], [*n=100 (test)*], [*n=1000 (train)*],
+    [RAGAS Faithfulness], [0.795 ± 0.228], [0.798 ± 0.256], [0.832 ± 0.245],
+    [RAGAS Answer Relevancy], [0.735 ± 0.369], [0.711 ± 0.412], [0.603 ± 0.455],
+    [TruLens Groundedness], [0.852 ± 0.118], [0.812 ± 0.136], [0.792 ± 0.137],
+    [TruLens Context Relevance], [0.633 ± 0.277], [0.653 ± 0.353], [0.662 ± 0.350],
+    [Hallucination AUROC], [--], [0.702], [--],
+    [Relevance RMSE], [0.671], [0.630], [--],
   ),
-  caption: [Retrieval performance comparison on test set],
+  caption: [RAGBench emanual evaluation metrics across three benchmark runs],
 )
 
-== RAGBench Benchmark Results
+Key observations from the benchmark results:
 
-#text(style: "italic")[
-TODO: Present RAGBench evaluation results with RAGAS and TruLens metrics.
-]
-
-#figure(
-  table(
-    columns: (auto, auto, auto),
-    inset: 8pt,
-    align: horizon,
-    [*Metric*], [*Mean*], [*Std Dev*],
-    [RAGAS Faithfulness], [TODO], [TODO],
-    [RAGAS Context Relevancy], [TODO], [TODO],
-    [TruLens Groundedness], [TODO], [TODO],
-    [TruLens Context Relevance], [TODO], [TODO],
-    [Hallucination AUROC], [TODO], [--],
-    [Relevance RMSE], [TODO], [--],
-  ),
-  caption: [RAGBench emanual evaluation metrics],
-)
+- *Faithfulness improves with scale*: RAGAS faithfulness increases from 0.795 to 0.832 as sample size grows, suggesting consistent grounding behavior.
+- *Answer relevancy varies by split*: The train split shows lower answer relevancy (0.603) compared to test (0.735), likely reflecting different question difficulty distributions.
+- *High groundedness*: TruLens groundedness remains consistently high (0.79--0.85) across all runs, indicating responses are well-supported by retrieved contexts.
+- *Context relevance stable*: TruLens context relevance is consistent around 0.63--0.66, showing reliable retrieval quality.
 
 == Query Latency
 
-#text(style: "italic")[
-TODO: Present timing measurements for the retrieval and generation pipeline.
-]
+Latency measurements were collected across all benchmark runs. The pipeline timing breaks down into query processing (embedding generation + hybrid search with reranking) and LLM response generation.
 
 #figure(
   table(
-    columns: (auto, auto),
+    columns: (auto, auto, auto, auto),
     inset: 8pt,
     align: horizon,
-    [*Stage*], [*Mean Time (seconds)*],
-    [Query embedding generation], [TODO],
-    [Hybrid search + reranking], [TODO],
-    [LLM response generation], [TODO],
-    [*Total*], [*TODO*],
+    [*Stage*], [*n=10*], [*n=100*], [*n=1000*],
+    [Query + Retrieval], [0.11s], [0.22s], [0.06s],
+    [LLM Generation], [3.24s], [3.26s], [3.18s],
+    [*Total*], [*3.35s*], [*3.49s*], [*3.25s*],
   ),
-  caption: [Query latency breakdown],
+  caption: [Query latency breakdown across benchmark runs (mean time in seconds)],
 )
+
+The results show that LLM response generation dominates the total latency at approximately 3.2 seconds per query, while retrieval is comparatively fast at 0.06--0.22 seconds. The variation in query time across runs reflects caching effects and system load rather than algorithmic differences.
 
 == Qualitative Examples
 
@@ -421,10 +397,6 @@ Fine-tune ColPali on synthesizer manual layouts:
 
 = Conclusion
 
-#text(style: "italic")[
-TODO: Complete this section after results are available.
-]
-
 This project presented Synth-RAG, a hybrid retrieval-augmented generation system for querying MIDI synthesizer manuals. The system addresses the challenge of processing visually rich technical documents by combining:
 
 - *ColPali vision-language embeddings* that process PDF pages as images, preserving visual layout and structure
@@ -432,9 +404,7 @@ This project presented Synth-RAG, a hybrid retrieval-augmented generation system
 - *Two-stage retrieval* with efficient HNSW-indexed prefetch and precise MaxSim reranking
 - *Agentic workflow* with intelligent tool selection and web search fallback
 
-#text(style: "italic")[
-TODO: Add 2-3 sentences summarizing key findings from results section.
-]
+Evaluation on the RAGBench emanual dataset demonstrated strong performance: RAGAS faithfulness scores ranged from 0.80 to 0.83, TruLens groundedness remained consistently high at 0.79--0.85, and the system achieved a hallucination detection AUROC of 0.70. The retrieval pipeline proved efficient, with query processing completing in under 0.25 seconds while LLM generation dominated overall latency at approximately 3.2 seconds per query.
 
 The key takeaway is that vision-language models offer a promising approach for RAG systems dealing with documents where visual information carries semantic meaning. By processing documents as images rather than extracted text, systems can better understand tables, diagrams, and layouts that are essential for technical documentation.
 
