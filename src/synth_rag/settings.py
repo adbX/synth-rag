@@ -53,7 +53,7 @@ def get_api_settings() -> APISettings:
 @lru_cache(maxsize=1)
 def get_qdrant_client() -> QdrantClient:
     api = get_api_settings()
-    return QdrantClient(url=api.qdrant_url, api_key=api.qdrant_key)
+    return QdrantClient(url=api.qdrant_url, api_key=api.qdrant_key, timeout=60)
 
 
 def get_manual_input_dir(subset: Literal["test", "full"]) -> Path:

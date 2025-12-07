@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Literal
 
@@ -25,6 +26,30 @@ from synth_rag.settings import (
     get_manual_input_dir,
     ensure_tmp_dirs,
 )
+
+from qdrant_client.http.exceptions import UnexpectedResponse
+
+
+def upsert_with_retry(
+    client,
+    collection_name: str,
+    points: list,
+    max_retries: int = 5,
+    base_delay: float = 1.0,
+):
+    """Upsert points with exponential backoff retry on transient errors."""
+    for attempt in range(max_retries):
+        try:
+            client.upsert(collection_name=collection_name, points=points)
+            return
+        except UnexpectedResponse as e:
+            # Retry on 503 Service Unavailable or other transient errors
+            if e.status_code in (503, 429, 502, 504) and attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                print(f"    Qdrant returned {e.status_code}, retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            else:
+                raise
 
 
 def parse_args() -> argparse.Namespace:
@@ -353,7 +378,7 @@ def ingest_manuals(
         upsert_batch_size = 10  # Keep payload size manageable
         for i in range(0, len(points), upsert_batch_size):
             batch = points[i:i + upsert_batch_size]
-            client.upsert(collection_name=collection_name, points=batch)
+            upsert_with_retry(client, collection_name, batch)
             print(f"    Upserted {min(i + upsert_batch_size, len(points))}/{len(points)} points")
     
     print(f"\n✅ Ingestion complete! Total points: {point_id}")

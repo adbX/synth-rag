@@ -10,3 +10,13 @@ Your task is understand the usage of `synth-rag` by reading its documentation in
 - Test both modes of synth-rag: the agentic and hybrid search methods
 
 I have installed ragas and trulens using uv already. So use those libraries. I have also added the ragbench code for evaluation to `prompts/ragbench-main/ragbench` which you can use to develop the metric evaluation scripts. Actually, just evaluate the hybrid search mode for now, don't evaluate agentic mode yet.
+
+benchmark-eval embed
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe id="js_video_iframe" src="https://jumpshare.com/embed/GtThOHIS6Csq619rOmp3" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
+benchmark ingest embed
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe id="js_video_iframe" src="https://jumpshare.com/embed/jXbKbukrL5QbcextcHiQ" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
+https://streamable.com/qi8kw0?src=player-page-share

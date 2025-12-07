@@ -1,4 +1,6 @@
 .DS_Store
+docs/videos/m4v
+
 .kreuzberg
 # Python-generated files
 __pycache__/
@@ -15,3 +17,4 @@ tmp/
 
 # mkdocs
 site/
+.env

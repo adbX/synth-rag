@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 from typing import Annotated, TypedDict
 
@@ -21,25 +22,31 @@ from qdrant_client import models
 
 from synth_rag.settings import get_qdrant_client, get_api_settings
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 
 # System prompt for the agent
 SYSTEM_PROMPT = """You are a helpful assistant that answers questions about MIDI synthesizers.
 
 CRITICAL TOOL USAGE RULES:
 1. You MUST ALWAYS call manuals_retriever_tool FIRST for every question - no exceptions.
-2. After getting results from manuals_retriever_tool, use that information as your PRIMARY source.
-3. Only call web_search_tool AFTER you have already called manuals_retriever_tool.
-4. If manuals_retriever_tool returns "No relevant information found", then you may use web_search_tool.
+2. After getting results from manuals_retriever_tool, ALWAYS call web_search_tool to find supplementary information.
+3. Use manual results as your PRIMARY source, with web results providing additional context.
 
 RESPONSE FORMAT:
 1. Start with "## Information from Manuals" section containing answers based on manual content.
 2. ALWAYS cite manual sources in this exact format: (Manual Name, Page X)
-3. If you also used web search, add a separate "## Additional Web Search Results" section at the end.
+3. Add a "## Additional Web Search Results" section with relevant supplementary information from the web.
 
 Example citation format:
 "The Digitone II has 8 tracks (Digitone-2-User-Manual, Page 12). Each track can be configured independently (Digitone-2-User-Manual, Page 15)."
 
-IMPORTANT: You MUST call manuals_retriever_tool before doing anything else. Do not skip this step.
+IMPORTANT: You MUST call both tools - manuals_retriever_tool first, then web_search_tool.
 """
 
 
@@ -101,61 +108,86 @@ class ManualsRetriever:
     def _load_models(self):
         """Lazy load models on first use."""
         if self._colpali_model is None:
-            print("Loading ColPali model...")
-            self._colpali_model = ColPali.from_pretrained(
-                "vidore/colpali-v1.3",
-                torch_dtype=torch.bfloat16,
-                device_map=self.device,
-            ).eval()
-            self._colpali_processor = ColPaliProcessor.from_pretrained("vidore/colpali-v1.3")
-            
-            print("Loading FastEmbed models...")
-            self._dense_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
-            self._sparse_model = SparseTextEmbedding("Qdrant/bm25")
+            try:
+                logger.info("Loading ColPali model...")
+                self._colpali_model = ColPali.from_pretrained(
+                    "vidore/colpali-v1.3",
+                    torch_dtype=torch.bfloat16,
+                    device_map=self.device,
+                ).eval()
+                self._colpali_processor = ColPaliProcessor.from_pretrained("vidore/colpali-v1.3")
+                
+                logger.info("Loading FastEmbed models...")
+                self._dense_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+                self._sparse_model = SparseTextEmbedding("Qdrant/bm25")
+                logger.info("All models loaded successfully")
+            except Exception as e:
+                logger.error(f"Failed to load models: {e}", exc_info=True)
+                raise RuntimeError(f"Model loading failed: {type(e).__name__}: {e}")
     
     def retrieve(self, query: str) -> list[dict]:
         """Retrieve relevant manual pages for a query."""
-        self._load_models()
+        logger.info(f"Retrieving results for query: {query[:100]}...")
         
-        # Generate embeddings
-        dense_embedding = list(self._dense_model.embed([query]))[0]
-        sparse_embedding = list(self._sparse_model.embed([query]))[0]
+        try:
+            self._load_models()
+        except Exception as e:
+            logger.error(f"Model loading failed during retrieve: {e}")
+            raise
         
-        processed_query = self._colpali_processor.process_queries([query]).to(self.device)
-        with torch.no_grad():
-            query_embedding = self._colpali_model(**processed_query)[0]
-        query_embedding_list = query_embedding.cpu().float().numpy().tolist()
+        try:
+            # Generate embeddings
+            logger.debug("Generating dense embedding...")
+            dense_embedding = list(self._dense_model.embed([query]))[0]
+            
+            logger.debug("Generating sparse embedding...")
+            sparse_embedding = list(self._sparse_model.embed([query]))[0]
+            
+            logger.debug("Generating ColPali embedding...")
+            processed_query = self._colpali_processor.process_queries([query]).to(self.device)
+            with torch.no_grad():
+                query_embedding = self._colpali_model(**processed_query)[0]
+            query_embedding_list = query_embedding.cpu().float().numpy().tolist()
+        except Exception as e:
+            logger.error(f"Embedding generation failed: {e}", exc_info=True)
+            raise RuntimeError(f"Embedding generation failed: {type(e).__name__}: {e}")
         
-        # Hybrid search with reranking
-        response = self.client.query_points(
-            collection_name=self.collection_name,
-            query=query_embedding_list,
-            prefetch=[
-                models.Prefetch(
-                    query=dense_embedding.tolist(),
-                    limit=50,
-                    using="dense",
-                ),
-                models.Prefetch(
-                    query=sparse_embedding.as_object(),
-                    limit=50,
-                    using="sparse",
-                ),
-                models.Prefetch(
-                    query=query_embedding_list,
-                    limit=50,
-                    using="colpali_rows",
-                ),
-                models.Prefetch(
-                    query=query_embedding_list,
-                    limit=50,
-                    using="colpali_cols",
-                ),
-            ],
-            limit=self.top_k,
-            using="colpali_original",
-            with_payload=True,
-        )
+        try:
+            # Hybrid search with reranking
+            logger.info(f"Querying Qdrant collection '{self.collection_name}'...")
+            response = self.client.query_points(
+                collection_name=self.collection_name,
+                query=query_embedding_list,
+                prefetch=[
+                    models.Prefetch(
+                        query=dense_embedding.tolist(),
+                        limit=50,
+                        using="dense",
+                    ),
+                    models.Prefetch(
+                        query=sparse_embedding.as_object(),
+                        limit=50,
+                        using="sparse",
+                    ),
+                    models.Prefetch(
+                        query=query_embedding_list,
+                        limit=50,
+                        using="colpali_rows",
+                    ),
+                    models.Prefetch(
+                        query=query_embedding_list,
+                        limit=50,
+                        using="colpali_cols",
+                    ),
+                ],
+                limit=self.top_k,
+                using="colpali_original",
+                with_payload=True,
+            )
+            logger.info(f"Qdrant returned {len(response.points)} results")
+        except Exception as e:
+            logger.error(f"Qdrant query failed: {e}", exc_info=True)
+            raise RuntimeError(f"Qdrant query failed: {type(e).__name__}: {e}")
         
         # Format results
         results = []
@@ -180,20 +212,27 @@ def create_manuals_retriever_tool(retriever: ManualsRetriever):
         Search PDF manuals for MIDI synthesizer information including features, settings, operations, and technical details.
         This tool searches indexed PDF manuals and returns relevant pages with page numbers for citation.
         """
-        results = retriever.retrieve(query)
-        
-        if not results:
-            return "No relevant information found in the manuals."
-        
-        # Format results as text
-        output = []
-        for i, result in enumerate(results, 1):
-            output.append(
-                f"[{i}] {result['manual_name']} (Page {result['page_num']}, Score: {result['score']:.3f})\n"
-                f"{result['text'][:800]}\n"
-            )
-        
-        return "\n---\n".join(output)
+        try:
+            results = retriever.retrieve(query)
+            
+            if not results:
+                logger.warning(f"No results found for query: {query[:100]}")
+                return "No relevant information found in the manuals."
+            
+            # Format results as text
+            output = []
+            for i, result in enumerate(results, 1):
+                output.append(
+                    f"[{i}] {result['manual_name']} (Page {result['page_num']}, Score: {result['score']:.3f})\n"
+                    f"{result['text'][:800]}\n"
+                )
+            
+            logger.info(f"Successfully retrieved {len(results)} results")
+            return "\n---\n".join(output)
+        except Exception as e:
+            error_msg = f"ERROR: Failed to search manuals - {type(e).__name__}: {e}"
+            logger.error(f"Tool execution failed: {e}", exc_info=True)
+            return error_msg
     
     return retrieve_manuals
 

@@ -31,3 +31,5 @@ Conclusion: Briefly summarize the entire project. Restate the problem, your appr
 Supporting links: Here's where you provide links on the demo video and GitHub repo, and if required for your team or if applicable, the website. Make sure to check they are accessible without requiring special permissions e.g. try to paste in the links in a separate browser where you're not signed in.
 
 We're excited to see what your final projects look like!
+
+Based on my benchmark results for 10, 100 and 1000 query runs, update my Typst report (`docs/report.typ`) @docs/report.typ  the main findings and redo the current placeholder tables. I want all 3 runs. You can decide whether to have all runs in one table or 3 different tables. My `logs/benchmark_ragbench/report` contails all the run outputs which includes the run_config file with all the query parameters and the and the results themselves. Associated files have the same timestamp. @logs/benchmark_ragbench/report

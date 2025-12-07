@@ -1,10 +1,6 @@
-// Synth-RAG Project Report
-// Typst Document
-
-// Document setup
 #set document(
   title: "Synth-RAG: A Hybrid Retrieval-Augmented Generation System for MIDI Synthesizer Manuals using ColPali Vision-Language Models",
-  author: "TODO: Author Name",
+  author: "Adhithya Bhaskar",
 )
 
 #set page(
@@ -18,6 +14,7 @@
   size: 11pt,
 )
 
+#show link: it => underline(text(fill: blue)[#it])
 #set heading(numbering: "1.")
 #set par(justify: true)
 
@@ -42,13 +39,15 @@
 
 #v(1em)
 
+
+
 // Abstract
 #align(center)[
   #text(weight: "bold")[Abstract]
 ]
 
 #par(first-line-indent: 0em)[
-Retrieval-Augmented Generation (RAG) systems have become essential for querying large document collections, yet traditional approaches struggle with visually rich documents containing tables, diagrams, and complex layouts. This project presents Synth-RAG, a hybrid RAG system designed for querying PDF manuals of MIDI synthesizers. Our approach leverages ColPali, a vision-language model that processes PDF pages directly as images, preserving visual information that text-only methods discard. We implement a novel two-stage retrieval architecture: the first stage uses HNSW-indexed mean-pooled multivectors alongside dense (FastEmbed) and sparse (BM25) embeddings for fast candidate retrieval, while the second stage performs precise reranking using original ColPali multivectors with MaxSim scoring. The system is augmented with a LangGraph-powered agentic workflow that combines manual retrieval with web search fallback for comprehensive question answering. We evaluate performance using the RAGBench dataset with RAGAS and TruLens metrics. Evaluation on the RAGBench emanual dataset demonstrates strong performance with RAGAS faithfulness scores of 0.80--0.83 and TruLens groundedness of 0.79--0.85 across runs of 10 to 1,000 queries, with a hallucination detection AUROC of 0.70.
+Retrieval-Augmented Generation (RAG) systems have become essential for querying large document collections, yet traditional approaches struggle with visually rich documents containing tables, diagrams, and complex layouts. This project presents Synth-RAG (https://adbx.github.io/synth-rag/), a hybrid RAG system designed for querying PDF manuals of MIDI synthesizers. Our approach leverages ColPali, a vision-language model that processes PDF pages directly as images, preserving visual information that text-only methods discard. We implement a novel two-stage retrieval architecture: the first stage uses HNSW-indexed mean-pooled multivectors alongside dense (FastEmbed) and sparse (BM25) embeddings for fast candidate retrieval, while the second stage performs precise reranking using original ColPali multivectors with MaxSim scoring. The system is augmented with a LangGraph-powered agentic workflow that combines manual retrieval with web search fallback for comprehensive question answering. We evaluate performance using the RAGBench dataset with RAGAS and TruLens metrics. Evaluation on the RAGBench emanual dataset demonstrates strong performance with RAGAS faithfulness scores of 0.80--0.83 and TruLens groundedness of 0.79--0.85 across runs of 10 to 1,000 queries, with a hallucination detection AUROC of 0.70.
 ]
 
 #v(1em)
@@ -150,9 +149,20 @@ The ingestion pipeline performs the following preprocessing steps:
 
 + *Semantic Chunking*: Extracted text is chunked using `semantic-text-splitter` with 512-token chunks and 50-token overlap for text-based embeddings.
 
+#figure(
+  image("mermaid-diagram-ingestion-pipeline.png", width: 80%),
+  caption: [Ingestion pipeline for PDF manual processing. The pipeline processes each PDF through parallel paths: visual processing via ColPali embeddings and text processing via dense and sparse embeddings, before uploading all representations to Qdrant.],
+)
+
 = Experimental Setup
 
 This section details the technical architecture, models, and evaluation methodology.
+
+== Technology Stack
+
+The system is built on a combination of cloud services and open-source libraries. For vector storage and retrieval, we use Qdrant Cloud, a managed vector database service that supports multiple named vectors per point, sparse vectors, and HNSW indexing with configurable parameters. Response generation is powered by the OpenAI API using GPT-4o-mini, chosen for its balance of quality and cost-effectiveness. The agentic workflow includes web search capability via the Brave Search API, which provides fallback information retrieval when manual content is insufficient.
+
+The core embedding pipeline relies on several key libraries: ColPali (`vidore/colpali-v1.3`) for vision-language embeddings, FastEmbed with the `sentence-transformers/all-MiniLM-L6-v2` model for dense text embeddings, and Qdrant's BM25 implementation for sparse keyword embeddings. PDF processing uses `pypdfium2` for high-quality page rendering and `pymupdf` for text extraction. The agentic orchestration is implemented with LangGraph, providing a stateful graph-based workflow for tool selection and response generation. A Gradio-based web interface provides an interactive chat experience for end users.
 
 == Embedding Models
 
@@ -203,43 +213,21 @@ Each point stores payload metadata including manual name, page number, extracted
 
 == Two-Stage Retrieval Architecture
 
-The retrieval pipeline implements a two-stage approach for efficiency and accuracy:
+The retrieval pipeline implements a two-stage approach that balances efficiency with accuracy. The first stage performs fast prefetch using HNSW-indexed vectors, retrieving candidate documents via dense embeddings for semantic similarity, sparse embeddings for keyword matching, and mean-pooled ColPali representations for both vertical (row-pooled) and horizontal (column-pooled) structure matching. Each prefetch retrieves the top 50 candidates, which are then merged for the reranking stage.
 
-=== Stage 1: Fast Prefetch
-
-The first stage retrieves candidate documents using HNSW-indexed vectors:
-- Dense embeddings (semantic similarity)
-- Sparse embeddings (keyword matching)
-- Mean-pooled ColPali rows (vertical structure)
-- Mean-pooled ColPali columns (horizontal structure)
-
-Each prefetch retrieves the top 50 candidates, which are then merged for reranking.
-
-=== Stage 2: Precise Reranking
-
-The second stage uses original ColPali multivectors with MaxSim scoring:
+The second stage performs precise reranking using original ColPali multivectors with MaxSim scoring:
 
 $ "MaxSim"(Q, D) = sum_(i=1)^(|Q|) max_(j=1)^(|D|) "sim"(q_i, d_j) $
 
-where $Q$ is the query embedding and $D$ is the document embedding. This scoring function finds the maximum similarity for each query vector across all document vectors, providing fine-grained matching.
+where $Q$ is the query embedding and $D$ is the document embedding. This scoring function finds the maximum similarity for each query vector across all document vectors, providing fine-grained matching that captures nuanced visual and textual relationships.
 
 == Agentic RAG with LangGraph
 
-The system includes a LangGraph-powered agent with two tools:
-
-+ *Manual Retriever Tool*: Always called first; performs hybrid search with ColPali reranking to find relevant manual pages.
-
-+ *Web Search Tool*: Fallback tool using Brave Search API; called only when manual retrieval is insufficient.
-
-The agent follows strict behavioral rules:
-- Always query manuals first (no exceptions)
-- Cite sources with manual name and page number
-- Structure responses with clear sections
-- Use web search only as supplementary information
+The system includes a LangGraph-powered agent with two primary tools: a Manual Retriever Tool that performs hybrid search with ColPali reranking to find relevant manual pages, and a Web Search Tool using the Brave Search API that serves as a fallback when manual retrieval is insufficient. The agent follows strict behavioral rules: it always queries manuals first without exception, cites sources with manual name and page number, structures responses with clear sections, and uses web search only as supplementary information.
 
 == Language Model
 
-Response generation uses OpenAI `gpt-4o-mini` with temperature 0 for deterministic outputs. The model receives retrieved contexts and generates grounded answers with citations.
+Response generation uses OpenAI's GPT-4o-mini model with temperature set to 0 for deterministic outputs. This model was selected for its strong instruction-following capabilities and cost-effectiveness for high-volume benchmarking. The model receives retrieved contexts as part of a structured prompt and generates grounded answers with citations to specific manual pages. The choice of a smaller model also enables faster response times, which is particularly important for the interactive chat interface.
 
 == Evaluation Metrics
 
@@ -308,37 +296,66 @@ Latency measurements were collected across all benchmark runs. The pipeline timi
 
 The results show that LLM response generation dominates the total latency at approximately 3.2 seconds per query, while retrieval is comparatively fast at 0.06--0.22 seconds. The variation in query time across runs reflects caching effects and system load rather than algorithmic differences.
 
-== Qualitative Examples
+== Qualitative Example
 
-#text(style: "italic")[
-TODO: Include 2-3 example queries with retrieved contexts and generated responses demonstrating system capabilities.
+The following example demonstrates the agentic RAG system's ability to synthesize information from multiple manuals and supplement it with web search results.
+
+*User Query:*
+#block(
+  fill: luma(245),
+  inset: 10pt,
+  radius: 4pt,
+  width: 100%,
+)[
+How can I setup encoders of the Faderfox EC-4 MIDI controller such that encoders 2, 3 & 4 control the Reverb of the Digitone II on MIDI channels 6, 7, & 8 respectively? Then, I also want to use encoder 1 to control encoders 2, 3 & 4 simultaneously on the Faderfox.
 ]
+
+*Agent Response:*
+#block(
+  fill: luma(245),
+  inset: 10pt,
+  radius: 4pt,
+  width: 100%,
+)[
+*Information from Manuals*
+
+To set up the Faderfox EC-4 MIDI controller to control the reverb of the Digitone II using encoders 2, 3, and 4 on MIDI channels 6, 7, and 8 respectively, and to use encoder 1 to control encoders 2, 3, and 4 simultaneously, follow these steps:
+
+*1. Faderfox EC-4 Setup:*
+   - The Faderfox EC-4 is a universal MIDI controller with 16 push-encoders and a large OLED display. It allows for various MIDI commands, including control change in both relative and absolute modes (Faderfox EC4 Manual V03, Page 3).
+   - To assign MIDI channels to specific encoders, you need to access the setup mode by pressing the gray SETUP key. This will display all available setups, and you can select the desired setup by pressing one of the 16 associated encoders (Faderfox EC4 quick start guide, Page 0).
+
+*2. Digitone II MIDI Control:*
+   - The Digitone II allows for MIDI control of its parameters, including reverb, through MIDI CC messages. You will need to refer to the MIDI implementation chart in the Digitone II manual to find the specific CC numbers for reverb control (Digitone II Appendix & MIDI CC, Page 19).
+
+*3. Linking Encoders:*
+   - The Faderfox EC-4 supports a link function that allows you to link multiple encoders. This can be used to control multiple parameters simultaneously. You can link encoders 2, 3, and 4 to encoder 1 so that adjusting encoder 1 will simultaneously adjust the other three (Faderfox EC4 Manual V03, Page 3).
+
+*Additional Web Search Results:*
+
+- The Faderfox EC-4 features a "link function" that allows you to link up to 16 encoders or pushbuttons for multiple commands, which is useful for controlling multiple parameters simultaneously (Faderfox EC4, Perfect Circuit).
+- The EC-4's MIDI learn functionality can be used to quickly assign incoming MIDI signals to the encoders, making it easier to set up the desired control mappings (Faderfox EC4, Perfect Circuit).
+
+By following these steps and utilizing the link function, you can effectively set up your Faderfox EC-4 to control the reverb on the Digitone II as desired.
+]
+
+*Analysis:*
+
+The agent first retrieved relevant pages from the indexed manuals, then supplemented with web search. The response demonstrates multi-source synthesis:
+
++ *Faderfox EC-4 Setup:* The system identified that the EC-4 is a universal MIDI controller with 16 push-encoders and retrieved instructions for accessing setup mode via the SETUP key to assign MIDI channels to specific encoders (Faderfox EC4 Manual V03, Page 3; Quick Start Guide, Page 0).
+
++ *Digitone II MIDI Control:* The agent retrieved information about MIDI CC control for reverb parameters, directing the user to the MIDI implementation chart (Digitone II Appendix & MIDI CC, Page 19).
+
++ *Linking Encoders:* The system identified the EC-4's link function that allows linking multiple encoders for simultaneous control, enabling encoder 1 to adjust encoders 2, 3, and 4 together (Faderfox EC4 Manual V03, Page 3).
+
++ *Web Search Supplement:* The agent's web search fallback provided additional context about the EC-4's MIDI learn functionality for quick assignment of incoming MIDI signals (Perfect Circuit).
+
+This example illustrates several system capabilities: cross-manual retrieval (combining Faderfox and Digitone II documentation), specific page citations, and intelligent use of web search to supplement manual content with practical usage information.
 
 = Discussion
 
-#text(style: "italic")[
-TODO: This section will provide analysis and interpretation of results.
-]
-
-== Interpretation of Results
-
-#text(style: "italic")[
-TODO: Discuss what the quantitative results indicate about system performance, including:
-- How faithfulness/groundedness scores compare to baselines
-- Whether hybrid search outperforms individual methods
-- Quality of retrieved contexts for different query types
-]
-
-== ColPali vs. Text-Only Retrieval
-
-A key research question is whether vision-language processing provides benefits over text-only approaches. The current benchmarking uses text-only embeddings (FastEmbed + BM25) for RAGBench evaluation to establish a baseline.
-
-#text(style: "italic")[
-TODO: Compare ColPali-enhanced retrieval on the MIDI manuals dataset vs. text-only retrieval, analyzing:
-- Cases where visual understanding improves retrieval
-- Computational cost tradeoffs
-- Indexing time differences
-]
+The query from the example is a complex question that requires knowledge and understanding of both devices in question, MIDI protocol, how they are connected and how to configure them. The agent demonstrates the ability to retrieve relevant information from the manuals with references to page numbers and supplement it with web search results to provide a comprehensive answer.
 
 == Limitations
 
@@ -352,48 +369,13 @@ Several limitations should be acknowledged:
 
 + *Computational Requirements*: ColPali requires significant GPU memory (~2GB model), limiting deployment options.
 
-#text(style: "italic")[
-TODO: Add any unexpected findings or challenges encountered during evaluation.
-]
-
 = Potential Future Directions
 
-Based on the current implementation and identified limitations, several concrete extensions are possible:
+Based on the current implementation and identified limitations, several concrete extensions are possible. The RAGBench evaluation pipeline currently uses text-only embeddings for compatibility, so a natural next step would be full ColPali integration with benchmarking. This would involve rendering RAGBench documents as images for ColPali processing, enabling direct comparison of ColPali retrieval against text-only baselines and measuring the impact of visual understanding on specific query types. Additionally, developing evaluation methodology for the LangGraph agent would provide insights into tool selection accuracy, multi-step reasoning quality, and how agent responses compare to single-retrieval approaches.
 
-== Full ColPali Integration with Benchmarking
+The system could benefit from extended dataset evaluation across RAGBench's 12 sub-datasets spanning different domains, including `covidqa` for medical information, `finqa` for financial document understanding, and `techqa` for technical support documentation. This would test generalization capabilities beyond the `emanual` domain. Domain adaptation presents another opportunity: fine-tuning ColPali on synthesizer manual layouts could improve recognition of signal flow diagrams and enhance MIDI-specific terminology understanding through domain-specific training data.
 
-The RAGBench evaluation pipeline currently uses text-only embeddings for compatibility. Future work could:
-- Render RAGBench documents as images for ColPali processing
-- Compare ColPali retrieval against text-only baselines
-- Measure the impact of visual understanding on specific query types
-
-== Agentic RAG Evaluation
-
-Develop evaluation methodology for the LangGraph agent:
-- Measure tool selection accuracy
-- Evaluate multi-step reasoning quality
-- Compare agent responses vs. single-retrieval responses
-
-== Extended Dataset Evaluation
-
-RAGBench provides 12 sub-datasets spanning different domains:
-- `covidqa`: Medical/COVID-19 information
-- `finqa`: Financial document understanding
-- `techqa`: Technical support documentation
-- Additional domains for generalization testing
-
-== Domain Adaptation
-
-Fine-tune ColPali on synthesizer manual layouts:
-- Create domain-specific training data
-- Improve recognition of signal flow diagrams
-- Enhance MIDI-specific terminology understanding
-
-== Retrieval Optimization
-
-- Experiment with different mean-pooling strategies
-- Implement query expansion techniques
-- Explore cross-encoder reranking alternatives
+Finally, retrieval optimization remains an open area for improvement. Experimenting with different mean-pooling strategies beyond row and column pooling, implementing query expansion techniques to improve recall, and exploring cross-encoder reranking as an alternative or complement to MaxSim scoring could all potentially enhance retrieval quality.
 
 = Conclusion
 
@@ -408,32 +390,13 @@ Evaluation on the RAGBench emanual dataset demonstrated strong performance: RAGA
 
 The key takeaway is that vision-language models offer a promising approach for RAG systems dealing with documents where visual information carries semantic meaning. By processing documents as images rather than extracted text, systems can better understand tables, diagrams, and layouts that are essential for technical documentation.
 
+#line(length: 100%)
 = Supporting Links
-
 == Demo Video
-
-#text(style: "italic")[
-TODO: Insert demo video link
-]
-
-Link: `[TODO: Add YouTube/Vimeo link to demo video]`
+https://jumpshare.com/share/ZuUYyPeYZe3fpdPzjMwQ
 
 == GitHub Repository
-
-Link: https://github.com/adbX/synth-rag
-
-The repository contains:
-- Complete source code for ingestion, query, and agent modules
-- Documentation with architecture diagrams
-- Benchmarking scripts and evaluation tools
-- Example queries and usage instructions
+https://github.com/adbX/synth-rag
 
 == Project Website
-
-#text(style: "italic")[
-TODO: Add project website link if applicable, or remove this section.
-]
-
-#v(2em)
-
-#line(length: 100%)
+https://adbx.github.io/synth-rag/

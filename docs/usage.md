@@ -25,8 +25,8 @@ uv run python -m synth_rag.manuals_ingest \
 
 ```bash
 uv run python -m synth_rag.manuals_ingest \
-    --subset full \
-    --collection midi_manuals_full \
+    --subset test \
+    --collection midi_manuals \
     --device mps \
     --recreate-collection \
     --clear-tmp
